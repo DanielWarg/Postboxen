@@ -3,6 +3,9 @@ import { z } from "zod"
 
 import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
 import { documentCopilot } from "@/lib/modules/documents/copilot"
+import { enforceRateLimit } from "@/lib/security/rate-limit"
+import { authenticateRequest } from "@/lib/auth"
+import { ApiError } from "@/lib/http/errors"
 
 const bodySchema = z.object({
   meetingId: z.string(),
@@ -22,6 +25,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parse.error.flatten() }, { status: 400 })
     }
 
+    enforceRateLimit(request)
+    await authenticateRequest(request, ["agent:write"])
+
     ensureAgentBootstrap()
 
     const suggestion = await documentCopilot.analyze(parse.data)
@@ -29,6 +35,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(suggestion, { status: 200 })
   } catch (error) {
     console.error("Doc copilot API error", error)
+    if (error instanceof ApiError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     return NextResponse.json(
       {
         error: "Det gick inte att analysera dokumentet just nu.",

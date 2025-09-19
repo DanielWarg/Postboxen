@@ -11,6 +11,7 @@ import type {
   StakeholderProfile,
 } from "@/types/meetings"
 import type { MeetingEvent } from "@/lib/agents/events"
+import { env } from "@/lib/config"
 
 interface MeetingMemory {
   createdAt: number
@@ -29,7 +30,7 @@ interface MeetingMemory {
   stakeholders: StakeholderProfile[]
 }
 
-const DEFAULT_TTL_MS = parseInt(process.env.MEMORY_DEFAULT_TTL_MS ?? "86400000", 10) // 24h
+const DEFAULT_TTL_MS = env.MEMORY_DEFAULT_TTL_MS
 
 class MemoryStore {
   private cache = new Map<string, MeetingMemory>()

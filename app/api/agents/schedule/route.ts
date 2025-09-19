@@ -6,6 +6,9 @@ import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
 import { createAgent } from "@/lib/agents/orchestrator"
 import { consentReceipt } from "@/lib/agents/compliance"
 import type { MeetingPlatform } from "@/types/meetings"
+import { enforceRateLimit } from "@/lib/security/rate-limit"
+import { authenticateRequest } from "@/lib/auth"
+import { ApiError } from "@/lib/http/errors"
 
 const requestSchema = z.object({
   platform: z.enum(["microsoft-teams", "zoom", "google-meet", "webex"] as [MeetingPlatform, ...MeetingPlatform[]]),
@@ -33,6 +36,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parse.error.flatten() }, { status: 400 })
     }
 
+    enforceRateLimit(request)
+    await authenticateRequest(request, ["agent:write"])
+
     const { platform, meeting } = parse.data
 
     ensureAgentBootstrap()
@@ -57,6 +63,9 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     console.error("Fel vid schemaläggning", error)
+    if (error instanceof ApiError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

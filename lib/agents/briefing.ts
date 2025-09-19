@@ -1,9 +1,7 @@
 import type { MeetingBrief, MeetingMetadata } from "@/types/meetings"
 import { getEventBus } from "@/lib/agents/events"
 import { getMeetingById, getMemoryStore } from "@/lib/agents/memory"
-
-const AI_API = process.env.AI_ASSISTANT_API_URL
-const AI_API_KEY = process.env.AI_ASSISTANT_API_KEY
+import { env } from "@/lib/config"
 
 const PRE_BRIEF_LEAD_TIME_MS = 30 * 60 * 1000
 
@@ -44,15 +42,15 @@ export const registerBriefingListeners = () => {
 }
 
 const fetchAI = async (payload: Record<string, unknown>, variant: "pre" | "post") => {
-  if (!AI_API || !AI_API_KEY) {
+  if (!env.AI_ASSISTANT_API_URL || !env.AI_ASSISTANT_API_KEY) {
     throw new Error("AI_ASSISTANT_API_URL och AI_ASSISTANT_API_KEY måste vara satta")
   }
 
-  const response = await fetch(`${AI_API}/briefings`, {
+  const response = await fetch(`${env.AI_ASSISTANT_API_URL}/briefings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${AI_API_KEY}`,
+      Authorization: `Bearer ${env.AI_ASSISTANT_API_KEY}`,
     },
     body: JSON.stringify({ ...payload, type: variant }),
   })
@@ -219,19 +217,19 @@ const publishBriefEvent = async (meetingId: string, brief: MeetingBrief) => {
 
 const deliverBrief = (organizerEmail: string): MeetingBrief["delivery"] => {
   const delivery: MeetingBrief["delivery"] = [{ channel: "api", target: organizerEmail }]
-  if (process.env.MS_GRAPH_SENDMAIL_TOKEN) {
+  if (env.MS_GRAPH_SENDMAIL_TOKEN) {
     delivery.push({ channel: "email", target: organizerEmail })
   }
   return delivery
 }
 
 const maybeSendEmail = async (brief: MeetingBrief, metadata: MeetingMetadata) => {
-  if (!process.env.MS_GRAPH_SENDMAIL_TOKEN) return
+  if (!env.MS_GRAPH_SENDMAIL_TOKEN) return
   try {
     await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.MS_GRAPH_SENDMAIL_TOKEN}`,
+        Authorization: `Bearer ${env.MS_GRAPH_SENDMAIL_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

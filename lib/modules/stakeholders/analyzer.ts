@@ -1,9 +1,7 @@
 import type { MeetingSummary, MeetingTranscriptSegment, StakeholderProfile } from "@/types/meetings"
 import { getEventBus } from "@/lib/agents/events"
 import { getMeetingById, setStakeholderProfiles } from "@/lib/agents/memory"
-
-const AI_API = process.env.AI_ASSISTANT_API_URL
-const AI_API_KEY = process.env.AI_ASSISTANT_API_KEY
+import { env } from "@/lib/config"
 
 interface StakeholderPayload {
   meetingId: string
@@ -61,15 +59,15 @@ export class StakeholderAnalyzer {
   }
 
   private async fetchAI(payload: StakeholderPayload): Promise<AIStakeholderResponse | null> {
-    if (!AI_API || !AI_API_KEY) {
+    if (!env.AI_ASSISTANT_API_URL || !env.AI_ASSISTANT_API_KEY) {
       return null
     }
 
-    const response = await fetch(`${AI_API}/stakeholders/analyze`, {
+    const response = await fetch(`${env.AI_ASSISTANT_API_URL}/stakeholders/analyze`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${env.AI_ASSISTANT_API_KEY}`,
       },
       body: JSON.stringify(payload),
     })

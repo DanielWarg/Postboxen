@@ -5,9 +5,7 @@ import type {
   SimulationRecommendation,
 } from "@/types/procurement"
 import { getEventBus } from "@/lib/agents/events"
-
-const AI_API = process.env.AI_ASSISTANT_API_URL
-const AI_API_KEY = process.env.AI_ASSISTANT_API_KEY
+import { env } from "@/lib/config"
 
 export class ProcurementSimulator {
   async run(input: SimulationInput): Promise<SimulationResponse> {
@@ -31,15 +29,15 @@ export class ProcurementSimulator {
   }
 
   private async fetchAI(input: SimulationInput) {
-    if (!AI_API || !AI_API_KEY) {
+    if (!env.AI_ASSISTANT_API_URL || !env.AI_ASSISTANT_API_KEY) {
       return this.fallback(input)
     }
 
-    const response = await fetch(`${AI_API}/procurement/simulate`, {
+    const response = await fetch(`${env.AI_ASSISTANT_API_URL}/procurement/simulate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${env.AI_ASSISTANT_API_KEY}`,
       },
       body: JSON.stringify(input),
     })

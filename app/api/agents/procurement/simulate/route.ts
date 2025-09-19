@@ -3,6 +3,9 @@ import { z } from "zod"
 
 import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
 import { procurementSimulator } from "@/lib/modules/procurement/simulator"
+import { enforceRateLimit } from "@/lib/security/rate-limit"
+import { authenticateRequest } from "@/lib/auth"
+import { ApiError } from "@/lib/http/errors"
 
 const variantSchema = z.object({
   id: z.union([z.literal("A"), z.literal("B")]),
@@ -39,12 +42,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parse.error.flatten() }, { status: 400 })
     }
 
+    enforceRateLimit(request)
+    await authenticateRequest(request, ["agent:write"])
+
     ensureAgentBootstrap()
 
     const result = await procurementSimulator.run(parse.data)
     return NextResponse.json(result, { status: 200 })
   } catch (error) {
     console.error("Kravsimulatorn misslyckades", error)
+    if (error instanceof ApiError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     return NextResponse.json(
       {
         error: "Det gick inte att simulera kraven just nu.",

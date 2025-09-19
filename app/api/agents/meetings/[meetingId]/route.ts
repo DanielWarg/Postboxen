@@ -4,11 +4,14 @@ import { z } from "zod"
 import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
 import { getMeetingById } from "@/lib/agents/memory"
 import { getAuditForMeeting } from "@/lib/agents/compliance"
+import { enforceRateLimit } from "@/lib/security/rate-limit"
+import { authenticateRequest } from "@/lib/auth"
+import { ApiError } from "@/lib/http/errors"
 
 const ParamsSchema = z.object({ meetingId: z.string().min(1) })
 
 export async function GET(
-  _req: NextRequest,
+  request: NextRequest,
   context: { params: { meetingId?: string } },
 ) {
   const parse = ParamsSchema.safeParse(context.params)
@@ -19,6 +22,9 @@ export async function GET(
   const { meetingId } = parse.data
 
   try {
+    enforceRateLimit(request)
+    await authenticateRequest(request, ["agent:read"])
+
     ensureAgentBootstrap()
 
     const meeting = getMeetingById(meetingId)
@@ -47,6 +53,9 @@ export async function GET(
       { status: 200 },
     )
   } catch (err) {
+    if (err instanceof ApiError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     return NextResponse.json(
       {
         error: "Internal error",

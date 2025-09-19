@@ -1,7 +1,5 @@
 import type { DocumentContext, CopilotSuggestion } from "@/types/documents"
-
-const AI_API = process.env.AI_ASSISTANT_API_URL
-const AI_API_KEY = process.env.AI_ASSISTANT_API_KEY
+import { env } from "@/lib/config"
 
 class DocumentCopilot {
   async analyze(context: DocumentContext): Promise<CopilotSuggestion> {
@@ -11,15 +9,15 @@ class DocumentCopilot {
   }
 
   private async fetchAI(context: DocumentContext): Promise<CopilotSuggestion | null> {
-    if (!AI_API || !AI_API_KEY) {
+    if (!env.AI_ASSISTANT_API_URL || !env.AI_ASSISTANT_API_KEY) {
       return null
     }
 
-    const response = await fetch(`${AI_API}/documents/diff`, {
+    const response = await fetch(`${env.AI_ASSISTANT_API_URL}/documents/diff`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${env.AI_ASSISTANT_API_KEY}`,
       },
       body: JSON.stringify(context),
     })

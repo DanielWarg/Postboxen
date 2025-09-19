@@ -5,6 +5,7 @@ import type { MeetingEvent } from "@/lib/agents/events"
 import { getEventBus } from "@/lib/agents/events"
 import { getMemoryStore } from "@/lib/agents/memory"
 import { evaluatePolicy } from "@/lib/agents/policy"
+import { env } from "@/lib/config"
 
 interface ActionProvider {
   createTask(action: MeetingActionItem): Promise<{ url?: string }>
@@ -19,7 +20,7 @@ class NullProvider implements ActionProvider {
 
 const plannerProvider: ActionProvider = {
   async createTask(action) {
-    const token = process.env.MS_PLANNER_TOKEN
+    const token = env.MS_PLANNER_TOKEN
     if (!token) return {}
     const response = await fetch("https://graph.microsoft.com/v1.0/planner/tasks", {
       method: "POST",
@@ -28,7 +29,7 @@ const plannerProvider: ActionProvider = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        planId: process.env.MS_PLANNER_PLAN_ID,
+        planId: env.MS_PLANNER_PLAN_ID,
         title: action.title,
         assignments: {},
         dueDateTime: action.dueDate,
@@ -47,11 +48,11 @@ const plannerProvider: ActionProvider = {
   },
 
   async sendReminder(action) {
-    if (!process.env.MS_GRAPH_SENDMAIL_TOKEN) return
+    if (!env.MS_GRAPH_SENDMAIL_TOKEN) return
     await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.MS_GRAPH_SENDMAIL_TOKEN}`,
+        Authorization: `Bearer ${env.MS_GRAPH_SENDMAIL_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -76,8 +77,8 @@ const plannerProvider: ActionProvider = {
 
 const jiraProvider: ActionProvider = {
   async createTask(action) {
-    const baseUrl = process.env.JIRA_BASE_URL
-    const token = process.env.JIRA_API_TOKEN
+    const baseUrl = env.JIRA_BASE_URL
+    const token = env.JIRA_API_TOKEN
     if (!baseUrl || !token) return {}
     const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
       method: "POST",
@@ -87,7 +88,7 @@ const jiraProvider: ActionProvider = {
       },
       body: JSON.stringify({
         fields: {
-          project: { key: process.env.JIRA_PROJECT_KEY },
+          project: { key: env.JIRA_PROJECT_KEY },
           summary: action.title,
           description: action.description,
           duedate: action.dueDate?.split("T")[0],
@@ -106,9 +107,9 @@ const jiraProvider: ActionProvider = {
 
 const trelloProvider: ActionProvider = {
   async createTask(action) {
-    const key = process.env.TRELLO_KEY
-    const token = process.env.TRELLO_TOKEN
-    const listId = process.env.TRELLO_LIST_ID
+    const key = env.TRELLO_KEY
+    const token = env.TRELLO_TOKEN
+    const listId = env.TRELLO_LIST_ID
     if (!key || !token || !listId) return {}
 
     const params = new URLSearchParams({
@@ -141,9 +142,9 @@ const providers: Record<string, ActionProvider> = {
 
 const getProviders = (): ActionProvider[] => {
   const active: ActionProvider[] = []
-  if (process.env.MS_PLANNER_PLAN_ID) active.push(providers.planner)
-  if (process.env.JIRA_BASE_URL) active.push(providers.jira)
-  if (process.env.TRELLO_LIST_ID) active.push(providers.trello)
+  if (env.MS_PLANNER_PLAN_ID) active.push(providers.planner)
+  if (env.JIRA_BASE_URL) active.push(providers.jira)
+  if (env.TRELLO_LIST_ID) active.push(providers.trello)
   if (!active.length) active.push(new NullProvider())
   return active
 }

@@ -13,13 +13,11 @@ import { redactSegments } from "@/lib/agents/redaction"
 import { buildCitations } from "@/lib/agents/citations"
 import { queuePreBriefGeneration } from "@/lib/agents/briefing"
 import { stakeholderAnalyzer } from "@/lib/modules/stakeholders/analyzer"
-
-const AI_API = process.env.AI_ASSISTANT_API_URL
-const AI_API_KEY = process.env.AI_ASSISTANT_API_KEY
+import { env } from "@/lib/config"
 
 export class MeetingAgentOrchestrator {
   constructor(private readonly config: MeetingAgentConfig) {
-    if (!AI_API || !AI_API_KEY) {
+    if (!env.AI_ASSISTANT_API_URL || !env.AI_ASSISTANT_API_KEY) {
       throw new Error("AI_ASSISTANT_API_URL och AI_ASSISTANT_API_KEY måste vara satta")
     }
   }
@@ -104,11 +102,11 @@ export class MeetingAgentOrchestrator {
       segments: transcripts,
     })
 
-    const response = await fetch(`${AI_API}/summaries`, {
+    const response = await fetch(`${env.AI_ASSISTANT_API_URL}/summaries`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${env.AI_ASSISTANT_API_KEY}`,
       },
       body: JSON.stringify({
         meetingId,
