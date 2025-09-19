@@ -35,6 +35,13 @@
    - CI-pipeline (lint/test/build)
    - Lasttester & kostnadsuppföljning
 
+## Möteskoppling – standardflöden
+- **Primär**: "Magisk inbjudan" (unik agentadress) + "1‑klick i kalendern" (toggle i portalen) för 90 % av kundernas möten.
+- **Sekundär**: Teams/Zoom slash-kommandon (`/kollegan join`) för power users.
+- **Fallback**: "Alltid-på" etiketter/kalendar och signerad "magisk länk" för låsta miljöer.
+- Samtyckeskort skickas vid join (Bas/Plus/Juridik) och lagras i post-brief; live-status i UI visar lobby/aktiv/efterarbete.
+- Offboarding: knapp "Ta bort agenten och radera allt" + 3 automatiska join-retrys innan nedgradering till efterhandsanalys.
+
 ---
 
 ## Fasindelad arbetsplan
@@ -44,6 +51,7 @@
 2. Lägg till Zod-validering på samtliga endpoints.
 3. Rate limiting (Redis) och strikt CORS-policy.
 4. Inför schema för secrets/konfig (t.ex. Zod + dotenv-safe).
+5. Ta fram security checklist och planera penetrationstest/bug bounty-light.
 
 ### Fas 2 – Persistenslager (vecka 3–4)
 1. Inför Postgres via ORM (Prisma/Drizzle).
@@ -56,6 +64,7 @@
 2. Visualisera pre/post-briefs och stakeholder-profiler.
 3. Skapa UI för regwatch, procurement-simulator och doc-copilot.
 4. Lägg till settings för consent, tokens, moduler.
+5. Leverera "Magisk inbjudan" (adress + instruktion) och "1‑klick i kalendern"-toggle inkl. live-status.
 
 ### Fas 4 – Observability & drift (vecka 7–8)
 1. Inför OpenTelemetry (trace) och Prometheus (metrics).
@@ -68,6 +77,7 @@
 2. Modulshop UI + billinghook + feature-flags.
 3. Persistens och versionshistorik för regwatch.
 4. CI/CD-pipeline (lint/test/build/deploy).
+5. Teams/Zoom-app med `/join`, "Alltid-på" etiketter och signerad “magisk länk” för specialfall.
 
 ### Fas 6 – Test & härdning (kontinuerligt)
 - Agera parallellt per modul/fas:
