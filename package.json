@@ -1,7 +1,8 @@
 {
-  "name": "my-v0-project",
+  "name": "postboxen",
   "version": "0.1.0",
   "private": true,
+  "description": "Postboxen – AI-kollega för Teams och Zoom som automatiserar möten.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -63,8 +64,11 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.36.0",
+    "eslint-config-next": "^15.5.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "pnpm@9.15.9+sha512.68046141893c66fad01c079231128e9afb89ef87e2691d69e4d40eee228988295fd4682181bae55b58418c3a253bde65a505ec7c5f9403ece5cc3cd37dcf2531"
 }
