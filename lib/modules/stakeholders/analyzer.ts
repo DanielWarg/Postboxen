@@ -1,7 +1,7 @@
 import type { MeetingSummary, MeetingTranscriptSegment, StakeholderProfile } from "@/types/meetings"
 import { getEventBus } from "@/lib/agents/events"
-import { getMeetingById, setStakeholderProfiles } from "@/lib/agents/memory"
 import { env } from "@/lib/config"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 
 interface StakeholderPayload {
   meetingId: string
@@ -27,25 +27,23 @@ interface AIStakeholderResponse {
 
 export class StakeholderAnalyzer {
   async run(meetingId: string) {
-    const memory = getMeetingById(meetingId)
-    if (!memory?.metadata) {
-      throw new Error("Meeting metadata saknas för stakeholder-analys")
-    }
+    const record = await meetingRepository.getMeetingDetail(meetingId)
+    if (!record?.metadata) throw new Error("Meeting saknas för stakeholder-analys")
 
     const payload: StakeholderPayload = {
       meetingId,
-      attendees: memory.metadata.attendees,
-      organizerEmail: memory.metadata.organizerEmail,
-      summary: memory.summary,
-      actionItems: memory.summary?.actionItems,
-      decisions: memory.summary?.decisions,
-      transcripts: memory.transcript,
+      attendees: record.metadata.attendees,
+      organizerEmail: record.metadata.organizerEmail,
+      summary: record.summary,
+      actionItems: record.summary?.actionItems,
+      decisions: record.summary?.decisions,
+      transcripts: [],
     }
 
     const ai = await this.fetchAI(payload)
     const profiles = ai?.profiles?.length ? ai.profiles.map(this.normalizeProfile) : this.fallback(payload)
 
-    setStakeholderProfiles(meetingId, profiles)
+    await meetingRepository.saveStakeholders(meetingId, profiles)
 
     const bus = getEventBus()
     await bus.publish({

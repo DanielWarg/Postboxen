@@ -1,6 +1,7 @@
 import type { RegulationWatchResult, RegulationSource } from "@/types/regwatch"
 import { getEventBus } from "@/lib/agents/events"
 import { env } from "@/lib/config"
+import { regwatchRepository } from "@/lib/db/repositories/regwatch"
 
 const DEFAULT_SOURCES: RegulationSource[] = [
   {
@@ -35,6 +36,8 @@ export class RegulationWatcher {
   async run(): Promise<RegulationWatchResult[]> {
     const ai = await this.fetchAI()
     const results = ai?.length ? ai : this.fallback()
+
+    await Promise.all(results.map((result) => regwatchRepository.save(result)))
 
     const bus = getEventBus()
     await Promise.all(

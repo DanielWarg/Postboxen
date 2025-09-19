@@ -17,6 +17,8 @@ pnpm dev
 ```
 Applikationen startar på `http://localhost:3000`. En `.env.local` behövs (se `.env.example`).
 
+> **Obs:** Ange `DATABASE_URL` (Postgres) innan du kör `pnpm db:push` för att provisionera databasen.
+
 ## API-endpoints
 - `POST /api/agents/schedule` – schemalägg agenten för ett möte.
 - `POST /api/agents/summarize` – genererar sammanfattning och kickar igång post-brief + stakeholder-analys.

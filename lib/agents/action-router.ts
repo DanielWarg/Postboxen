@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto"
 import type { MeetingActionItem } from "@/types/meetings"
 import type { MeetingEvent } from "@/lib/agents/events"
 import { getEventBus } from "@/lib/agents/events"
-import { getMemoryStore } from "@/lib/agents/memory"
 import { evaluatePolicy } from "@/lib/agents/policy"
 import { env } from "@/lib/config"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 
 interface ActionProvider {
   createTask(action: MeetingActionItem): Promise<{ url?: string }>
@@ -155,13 +155,24 @@ const scheduleNudge = (action: MeetingActionItem) => {
   const nudgeAt = due + 1000 * 60 * 60 * 48
   const delay = Math.max(0, nudgeAt - Date.now())
   setTimeout(async () => {
-    const memory = getMemoryStore()
-    const meeting = memory.getMeeting(action.meetingId)
-    const current = meeting?.actionItems.find((item) => item.id === action.id)
-    if (!current || current.status === "done") return
+    const dbAction = await meetingRepository.getActionItemById(action.id)
+    if (!dbAction || dbAction.status === "done") return
+
+    const hydrated: MeetingActionItem = {
+      id: dbAction.id,
+      meetingId: dbAction.meetingId,
+      title: dbAction.title,
+      description: dbAction.description,
+      owner: dbAction.owner,
+      dueDate: dbAction.dueDate ? dbAction.dueDate.toISOString() : undefined,
+      source: dbAction.source as MeetingActionItem["source"],
+      status: dbAction.status as MeetingActionItem["status"],
+      externalLinks: dbAction.externalLinks as MeetingActionItem["externalLinks"],
+    }
+
     for (const provider of getProviders()) {
       if (provider.sendReminder) {
-        await provider.sendReminder(current)
+        await provider.sendReminder(hydrated)
       }
     }
   }, delay).unref()
@@ -172,7 +183,6 @@ export const registerActionRouter = () => {
   bus.subscribe("commitment", async (event: MeetingEvent) => {
     if (event.type !== "commitment") return
 
-    const memory = getMemoryStore()
     const action: MeetingActionItem = {
       id: randomUUID(),
       meetingId: event.meetingId,
@@ -185,7 +195,7 @@ export const registerActionRouter = () => {
       externalLinks: [],
     }
 
-    const policy = evaluatePolicy({
+    const policy = await evaluatePolicy({
       meetingId: event.meetingId,
       dataClass: "action",
       operation: "store",
@@ -203,7 +213,7 @@ export const registerActionRouter = () => {
       }
     }
 
-    memory.appendAction(event.meetingId, action)
+    await meetingRepository.upsertActionItem(action)
     scheduleNudge(action)
 
     await bus.publish({

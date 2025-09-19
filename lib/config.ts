@@ -42,6 +42,7 @@ const EnvSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().default(120),
   MEMORY_DEFAULT_TTL_MS: z.coerce.number().default(86_400_000),
+  DATABASE_URL: z.string(),
 })
 
 const parsed = EnvSchema.safeParse({
@@ -86,6 +87,7 @@ const parsed = EnvSchema.safeParse({
   RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX,
   MEMORY_DEFAULT_TTL_MS: process.env.MEMORY_DEFAULT_TTL_MS,
+  DATABASE_URL: process.env.DATABASE_URL,
 })
 
 if (!parsed.success) {

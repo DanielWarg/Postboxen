@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Meeting {
+  id              String            @id
+  title           String
+  startTime       DateTime
+  endTime         DateTime
+  joinUrl         String
+  organizerEmail  String
+  attendees       Json
+  agenda          String?
+  persona         String?
+  language        String?
+  consentProfile  String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  summary         MeetingSummary?
+  decisions       DecisionCard[]
+  actionItems     ActionItem[]
+  briefs          MeetingBrief[]
+  stakeholders    Stakeholder[]
+  auditEntries    AuditEntry[]
+  consent         MeetingConsent?
+}
+
+model MeetingSummary {
+  id          String   @id @default(cuid())
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId   String   @unique
+  decisions   Json
+  actionItems Json
+  risks       Json
+  highlights  Json
+  languages   Json
+  citations   Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DecisionCard {
+  id          String   @id
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId   String
+  headline    String
+  problem     String
+  alternatives Json
+  recommendation String
+  owner       String
+  decidedAt   DateTime
+  consequences Json
+  citations   Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ActionItem {
+  id            String   @id
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId     String
+  title         String
+  description   String
+  owner         String
+  dueDate       DateTime?
+  source        String
+  status        String
+  externalLinks Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MeetingBrief {
+  id          String   @id @default(cuid())
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId   String
+  type        String
+  generatedAt DateTime
+  subject     String
+  headline    String
+  keyPoints   Json
+  decisions   Json?
+  risks       Json?
+  nextSteps   Json?
+  content     String
+  delivery    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([meetingId, type])
+}
+
+model Stakeholder {
+  id           String   @id @default(cuid())
+  meeting      Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId    String
+  email        String
+  name         String?
+  interests    Json
+  concerns     Json
+  influence    String
+  preferredPitch String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([meetingId, email])
+}
+
+model AuditEntry {
+  id         String   @id @default(cuid())
+  meeting    Meeting? @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId  String?
+  event      String
+  payload    Json
+  policy     String?
+  occurredAt DateTime
+  createdAt  DateTime @default(now())
+}
+
+model RegulationSource {
+  id          String   @id
+  title       String
+  jurisdiction String
+  url         String
+  version     String
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  changes     RegulationChange[]
+}
+
+model RegulationChange {
+  id            String            @id @default(cuid())
+  source        RegulationSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId      String
+  section       String
+  previousText  String
+  newText       String
+  effectiveDate DateTime?
+  summary       String
+  impactAreas   Json
+  severity      String
+  createdAt     DateTime @default(now())
+}
+
+model MeetingConsent {
+  id            String   @id @default(cuid())
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId     String   @unique
+  profile       String
+  scope         Json
+  retentionDays Int
+  dataResidency String
+  acceptedAt    DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

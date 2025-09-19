@@ -2,37 +2,38 @@ import { Buffer } from "node:buffer"
 
 import type { MeetingConsent, MeetingEvent } from "@/types/meetings"
 import { getEventBus } from "@/lib/agents/events"
+import { auditRepository } from "@/lib/db/repositories/audit"
 
 interface AuditEntry {
-  meetingId: string
+  meetingId?: string
   event: string
   payload: unknown
   occurredAt: string
   policy?: string
 }
 
-class AuditLog {
-  private entries: AuditEntry[] = []
-
-  add(entry: AuditEntry) {
-    this.entries.push(entry)
-    if (this.entries.length > 10_000) {
-      this.entries.shift()
-    }
-  }
-
-  list(meetingId?: string) {
-    return meetingId ? this.entries.filter((entry) => entry.meetingId === meetingId) : [...this.entries]
-  }
-}
-
-const auditLog = new AuditLog()
-
 export const recordAudit = (entry: AuditEntry) => {
-  auditLog.add(entry)
+  void auditRepository.record({
+    meetingId: entry.meetingId,
+    event: entry.event,
+    payload: entry.payload,
+    policy: entry.policy,
+    occurredAt: new Date(entry.occurredAt),
+  })
 }
 
-export const listAuditEntries = (meetingId?: string) => auditLog.list(meetingId)
+export const listAuditEntries = async (meetingId?: string) => {
+  if (!meetingId) return []
+  const entries = await auditRepository.listForMeeting(meetingId)
+  return entries.map((entry) => ({
+    id: entry.id,
+    meetingId: entry.meetingId ?? undefined,
+    event: entry.event,
+    payload: entry.payload,
+    policy: entry.policy ?? undefined,
+    occurredAt: entry.occurredAt.toISOString(),
+  }))
+}
 
 export const getAuditForMeeting = (meetingId: string) => listAuditEntries(meetingId)
 

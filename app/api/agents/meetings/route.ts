@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
-import { getMemoryStore } from "@/lib/agents/memory"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 import { enforceRateLimit } from "@/lib/security/rate-limit"
 import { authenticateRequest } from "@/lib/auth"
 import { ApiError } from "@/lib/http/errors"
@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     await authenticateRequest(request, ["agent:read"])
 
     ensureAgentBootstrap()
-    return NextResponse.json({ meetings: getMemoryStore().listMeetings() })
+    const meetings = await meetingRepository.getMeetingOverview()
+    return NextResponse.json({ meetings })
   } catch (error) {
     if (error instanceof ApiError) {
       return NextResponse.json({ error: error.message }, { status: error.status })

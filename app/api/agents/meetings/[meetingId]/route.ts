@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
 import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
-import { getMeetingById } from "@/lib/agents/memory"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 import { getAuditForMeeting } from "@/lib/agents/compliance"
 import { enforceRateLimit } from "@/lib/security/rate-limit"
 import { authenticateRequest } from "@/lib/auth"
@@ -27,26 +27,24 @@ export async function GET(
 
     ensureAgentBootstrap()
 
-    const meeting = getMeetingById(meetingId)
+    const meeting = await meetingRepository.getMeetingDetail(meetingId)
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 })
     }
 
-    const { transcript, decisionCards, actionItems, summary, consent, briefs, stakeholders, metadata } = meeting
-    const audit = getAuditForMeeting(meetingId)
+    const audit = await getAuditForMeeting(meetingId)
 
     return NextResponse.json(
       {
         meeting: {
           meetingId,
-          metadata,
-          consent,
-          transcriptLength: transcript.length,
-          decisions: decisionCards,
-          actionItems,
-          summary,
-          briefs,
-          stakeholders,
+          metadata: meeting.metadata,
+          consent: meeting.consent,
+          decisions: meeting.decisions,
+          actionItems: meeting.actionItems,
+          summary: meeting.summary,
+          briefs: meeting.briefs,
+          stakeholders: meeting.stakeholders,
         },
         audit,
       },

@@ -7,12 +7,12 @@ import type {
 } from "@/types/meetings"
 import { resolveProvider } from "@/lib/integrations/providers"
 import { getEventBus } from "@/lib/agents/events"
-import { getMemoryStore, setMeetingMetadata } from "@/lib/agents/memory"
 import { buildConsent, evaluatePolicy } from "@/lib/agents/policy"
 import { redactSegments } from "@/lib/agents/redaction"
 import { buildCitations } from "@/lib/agents/citations"
 import { queuePreBriefGeneration } from "@/lib/agents/briefing"
 import { stakeholderAnalyzer } from "@/lib/modules/stakeholders/analyzer"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 import { env } from "@/lib/config"
 
 export class MeetingAgentOrchestrator {
@@ -38,6 +38,7 @@ export class MeetingAgentOrchestrator {
         occurredAt: consent.acceptedAt,
         payload: consent,
       })
+      await meetingRepository.saveConsent(payload.meetingId, consent)
     }
     const metadata = {
       meetingId: payload.meetingId,
@@ -50,8 +51,9 @@ export class MeetingAgentOrchestrator {
       agenda: payload.agenda,
       persona: payload.persona,
       language: payload.language,
+      consentProfile: payload.consentProfile,
     }
-    setMeetingMetadata(metadata)
+    await meetingRepository.upsertMetadata(metadata)
     queuePreBriefGeneration(metadata)
     return { ...result, consent }
   }
@@ -61,7 +63,7 @@ export class MeetingAgentOrchestrator {
   }
 
   async syncRecording(meetingId: string) {
-    const policy = evaluatePolicy({
+    const policy = await evaluatePolicy({
       meetingId,
       dataClass: "recording",
       operation: "process",
@@ -74,7 +76,7 @@ export class MeetingAgentOrchestrator {
   }
 
   async transcripts(meetingId: string) {
-    const policy = evaluatePolicy({
+    const policy = await evaluatePolicy({
       meetingId,
       dataClass: "transcript",
       operation: "process",
@@ -126,8 +128,7 @@ export class MeetingAgentOrchestrator {
     const summary = (await response.json()) as MeetingSummary
     summary.citations = summary.citations?.length ? summary.citations : citations
 
-    const memory = getMemoryStore()
-    memory.setSummary(meetingId, summary)
+    await meetingRepository.saveSummary(meetingId, summary)
 
     const bus = getEventBus()
     await bus.publish({
@@ -146,9 +147,7 @@ export class MeetingAgentOrchestrator {
 
   private publishSegments(meetingId: string, segments: MeetingTranscriptSegment[]) {
     const bus = getEventBus()
-    const memory = getMemoryStore()
     for (const segment of segments) {
-      memory.appendTranscript(meetingId, segment)
       void bus.publish({
         type: "speech.segment",
         meetingId,

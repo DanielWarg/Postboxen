@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto"
 import type { Citation, MeetingDecisionCard, MeetingTranscriptSegment } from "@/types/meetings"
 import type { MeetingEvent } from "@/lib/agents/events"
 import { getEventBus } from "@/lib/agents/events"
-import { getMemoryStore } from "@/lib/agents/memory"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 
 const DECISION_KEYWORDS = ["beslutar", "vi tar", "vi kör", "vi går på", "bestämmer", "choose", "decide"]
 const COMMITMENT_KEYWORDS = ["jag tar", "jag fixar", "vi tar", "kan ta", "ansvar", "ownership"]
@@ -38,8 +38,7 @@ export const processSegmentForDecision = ({ meetingId, segment }: DecisionContex
   }
 
   const bus = getEventBus()
-  const memory = getMemoryStore()
-  memory.appendDecision(meetingId, card)
+  void meetingRepository.upsertDecisionCard(card)
   void bus.publish({
     type: "decision.finalized",
     meetingId,

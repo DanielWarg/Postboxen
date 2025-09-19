@@ -1,7 +1,7 @@
 import type { MeetingBrief, MeetingMetadata } from "@/types/meetings"
 import { getEventBus } from "@/lib/agents/events"
-import { getMeetingById, getMemoryStore } from "@/lib/agents/memory"
 import { env } from "@/lib/config"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 
 const PRE_BRIEF_LEAD_TIME_MS = 30 * 60 * 1000
 
@@ -71,15 +71,13 @@ const fetchAI = async (payload: Record<string, unknown>, variant: "pre" | "post"
 }
 
 export const generatePreBrief = async (meetingId: string) => {
-  const memory = getMeetingById(meetingId)
-  if (!memory?.metadata) {
-    throw new Error("Meeting metadata saknas")
-  }
+  const record = await meetingRepository.getMeetingDetail(meetingId)
+  if (!record) throw new Error("Meeting saknas")
 
   const payload = {
-    meeting: memory.metadata,
-    recentActions: memory.actionItems,
-    agenda: memory.metadata.agenda,
+    meeting: record.metadata,
+    recentActions: record.actionItems,
+    agenda: record.metadata.agenda,
   }
 
   const ai = await safeFetchAI(payload, "pre")
@@ -87,34 +85,31 @@ export const generatePreBrief = async (meetingId: string) => {
   const brief: MeetingBrief = {
     type: "pre",
     generatedAt: new Date().toISOString(),
-    subject: ai.subject ?? `Brief inför ${memory.metadata.title}`,
+    subject: ai.subject ?? `Brief inför ${record.metadata.title}`,
     headline: ai.headline ?? "Förberedelser inför mötet",
     keyPoints: ai.keyPoints?.length ? ai.keyPoints : buildFallbackPrePoints(payload),
     decisions: ai.decisions,
     risks: ai.risks,
     nextSteps: ai.nextSteps,
     content: ai.content ?? buildFallbackPreBrief(payload),
-    delivery: deliverBrief(memory.metadata.organizerEmail),
+    delivery: deliverBrief(record.metadata.organizerEmail),
   }
 
-  const store = getMemoryStore()
-  store.setBrief(meetingId, brief)
+  await meetingRepository.saveBrief(meetingId, brief)
   await publishBriefEvent(meetingId, brief)
-  await maybeSendEmail(brief, memory.metadata)
+  await maybeSendEmail(brief, record.metadata)
   return brief
 }
 
 export const generatePostBrief = async (meetingId: string) => {
-  const memory = getMeetingById(meetingId)
-  if (!memory?.metadata || !memory.summary) {
-    throw new Error("Meeting summary eller metadata saknas")
-  }
+  const record = await meetingRepository.getMeetingDetail(meetingId)
+  if (!record?.metadata || !record.summary) throw new Error("Meeting saknar summary")
 
   const payload = {
-    meeting: memory.metadata,
-    summary: memory.summary,
-    decisions: memory.decisionCards,
-    actionItems: memory.actionItems,
+    meeting: record.metadata,
+    summary: record.summary,
+    decisions: record.decisions,
+    actionItems: record.actionItems,
   }
 
   const ai = await safeFetchAI(payload, "post")
@@ -122,23 +117,22 @@ export const generatePostBrief = async (meetingId: string) => {
   const brief: MeetingBrief = {
     type: "post",
     generatedAt: new Date().toISOString(),
-    subject: ai.subject ?? `Exec-post-brief: ${memory.metadata.title}`,
+    subject: ai.subject ?? `Exec-post-brief: ${record.metadata.title}`,
     headline: ai.headline ?? "Beslut och nästa steg",
-    keyPoints: ai.keyPoints?.length ? ai.keyPoints : memory.summary.highlights ?? [],
-    decisions: ai.decisions?.length ? ai.decisions : memory.summary.decisions,
-    risks: ai.risks?.length ? ai.risks : memory.summary.risks,
+    keyPoints: ai.keyPoints?.length ? ai.keyPoints : record.summary.highlights ?? [],
+    decisions: ai.decisions?.length ? ai.decisions : record.summary.decisions,
+    risks: ai.risks?.length ? ai.risks : record.summary.risks,
     nextSteps:
       ai.nextSteps?.length
         ? ai.nextSteps
-        : memory.summary.actionItems.map((item) => `${item.owner}: ${item.description}`),
+        : record.summary.actionItems.map((item) => `${item.owner}: ${item.description}`),
     content: ai.content ?? buildFallbackPostBrief(payload),
-    delivery: deliverBrief(memory.metadata.organizerEmail),
+    delivery: deliverBrief(record.metadata.organizerEmail),
   }
 
-  const store = getMemoryStore()
-  store.setBrief(meetingId, brief)
+  await meetingRepository.saveBrief(meetingId, brief)
   await publishBriefEvent(meetingId, brief)
-  await maybeSendEmail(brief, memory.metadata)
+  await maybeSendEmail(brief, record.metadata)
   return brief
 }
 

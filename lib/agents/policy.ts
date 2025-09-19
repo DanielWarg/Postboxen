@@ -1,5 +1,5 @@
 import type { ConsentProfile, MeetingConsent } from "@/types/meetings"
-import { getMemoryStore } from "@/lib/agents/memory"
+import { meetingRepository } from "@/lib/db/repositories/meetings"
 
 export interface PolicyDecision {
   allowed: boolean
@@ -42,13 +42,11 @@ export const buildConsent = (meetingId: string, profile: ConsentProfile, accepte
     retentionDays: template.retentionDays,
     dataResidency: template.dataResidency,
   }
-  const memory = getMemoryStore()
-  memory.setConsent(meetingId, consent)
   return consent
 }
 
-export const evaluatePolicy = (ctx: PolicyContext): PolicyDecision => {
-  const consent = ctx.consent ?? getMemoryStore().getMeeting(ctx.meetingId)?.consent
+export const evaluatePolicy = async (ctx: PolicyContext): Promise<PolicyDecision> => {
+  const consent = ctx.consent ?? (await meetingRepository.getConsent(ctx.meetingId))
   if (!consent) {
     return {
       allowed: false,

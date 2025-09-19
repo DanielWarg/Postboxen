@@ -44,6 +44,7 @@ export interface MeetingMetadata {
   agenda?: string
   persona?: string
   language?: string
+  consentProfile?: string
 }
 
 export interface MeetingBrief {
