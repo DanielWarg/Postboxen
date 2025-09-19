@@ -41,13 +41,19 @@
 - **Testning**: inga unit/integration/E2E-tester; saknar mockar för externa API:er.
 
 ### Prioriterad roadmap (10 veckor)
-1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting.
-2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan.
-3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering.
+1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting. ✅
+2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan. _(pågår – Prisma schema klus klart, nästa steg migrera logik)_.
+3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering + UI för "magisk inbjudan" & 1‑klick-toggles.
 4. **Vecka 7–8 – Observability**: OpenTelemetry, Prometheus/Grafana, Sentry, kostnadsmetrik per möte.
-5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD.
+5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD samt Teams/Zoom slash-kommandon, "Alltid-på" etiketter och signerad magisk länk som fallback.
 
-Detaljerade tickets finns i `docs/roadmap/v1-checklist.md`; uppdatera checklistan löpande när arbete planeras eller levereras.
+### Möteskoppling & onboarding
+- **Primär**: "Magisk inbjudan" (unik agentadress) och "1‑klick i kalendern"-toggle i portalen.
+- **Sekundär**: Teams/Zoom slash-kommandon för power users.
+- **Fallback**: "Alltid-på" etiketter/kalendar + signerad "magisk länk" för låsta miljöer.
+- Samtyckeskort visas vid join och kvittot inkluderas i post-brief; UI visar live-status (lobby → aktiv → efterarbete) och en knapp för omedelbar offboarding.
+
+Detaljerade tickets finns i `docs/roadmap/v1-checklist.md`; uppdatera checklistan löpande när arbete planeras eller levereras. Den fulla produktionsplanen ligger i `docs/roadmap/production-plan.md`.
 - Arkitektur- och roadmap-detaljer finns under `docs/architecture/` och `docs/roadmap/30-60-90.md`; modulshopens SLA dokumenteras i `docs/modules/catalog.md`.
 
 ## Testing Guidelines
