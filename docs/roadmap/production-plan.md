@@ -59,6 +59,19 @@
 3. Lägg till Redis cache/job queue och backupstrategi.
 4. Implementera retention och automatiska backup-jobb.
 
+**Detaljerade delmål:**
+1.1 Sätt `DATABASE_URL` (include `sslmode=require` om managed).
+1.2 Kör `pnpm db:push` och verifiera schema.
+1.3 Röktesta read/write via `/api/agents/meetings` (POST/GET).
+2.1 Refaktor agents till repositories (mötet, decisions, actions, briefs, stakeholders, consent, audit).
+2.2 Skapa migrationsscript för befintlig data (om tidigare miljö).
+3.1 Provisionera Redis och sätt `REDIS_URL`.
+3.2 Koppla rate limit till Redis.
+3.3 Skapa BullMQ queue `agent-jobs` (nudges, regwatch, join-retries).
+4.1 Aktivera dagliga Postgres snapshots (30/90 dagears retention).
+4.2 Säkerställ Redis-backup (managed snapshot eller dump).
+4.3 Dokumentera återställningsprocess.
+
 ### Fas 3 – Frontend & UX (vecka 5–6)
 1. Bygg dashboard med mötesöversikt, beslut och actions.
 2. Visualisera pre/post-briefs och stakeholder-profiler.
@@ -85,3 +98,30 @@
   - Mock för externa tjänster, contract testing.
   - Lasttester innan go-live.
   - Incident-runbooks och “break-glass”-processer.
+
+**E2E-scenarion:**
+1. Schemalägg möte → agent join → recap + action i Planner/Trello → nudging 48h.
+2. Join misslyckas → 3 retries → degradering till efterhandsanalys.
+
+**Riskhantering:**
+- Postgres/Redis saknas → åtgärdas i Fas 2 (env, push, backup).
+- Frontend saknas → byggs i Fas 3.
+- Observability/test → Fas 4 & 6.
+- Agent jobb/kedjor → Fas 5.
+**Delaktiviteter:**
+1. Dashboard-tabell (kommande 7 dagar) + status (lobby/inne/klart).
+2. Read-only vy för pre/post-briefs, stakeholders, regwatch.
+3. Procurement/doc-copilot modals (visa resultat).
+4. Consent- & modulinställningar + retention-vy.
+5. Visa agent-e-post (“magisk inbjudan”), 1‑klick toggle och live-status (grön/gul/röd).
+**Delaktiviteter:**
+1. Sentry integrerad i API & workers.
+2. OpenTelemetry spans för `/api/agents/*` + BullMQ-jobb.
+3. Prometheus `/metrics` (request_count, duration, job_run_duration, tokens, kostnad/meeting).
+4. Dashboard/alerting på P95 latency, fel, kostnader.
+**Delaktiviteter:**
+1. Nudging-jobb (BullMQ) med retries & DLQ.
+2. Modulshop UI med toggles (Juridik-Gunnar m.fl.).
+3. Spara regwatch-historik + UI.
+4. CI/CD pipeline.
+5. Teams/Zoom slash-kommandon, "Alltid-på" etiketter, signerad magisk länk.
