@@ -31,6 +31,27 @@
 - Doc-copilot hittas under `app/api/agents/documents/analyze`; skicka nuvarande + föreslagen text så returneras diff-segment och källrekommendationer.
 - Regelförändringsvakten (`app/api/agents/regwatch`) listar aktuella ändringar i AI Act, GDPR och LOU med rekommendationer.
 
+## Status-översikt (December 2024)
+
+### ✅ **Komplett Backend**
+- **PostgreSQL**: 10 tabeller med Prisma ORM
+- **Redis**: Cache, rate limiting, job queues
+- **API**: 15+ endpoints för alla agent-funktioner
+- **Integrations**: Teams, Zoom, Google Meet, Webex
+- **AI-moduler**: Orchestrator, Decision Cards, Briefing, Stakeholder Analyzer, Doc-copilot, Procurement Simulator, Regwatch, Nudging
+
+### ⚠️ **Lösa trådar (Blockerar produktion)**
+- **Next.js 15-fel**: Event handlers, searchParams
+- **Observability**: OpenTelemetry/Winston build-fel
+- **Autentisering**: OAuth2/JWT saknas
+- **Testning**: Komplett testsuite saknas
+
+### 🎯 **Nästa steg**
+1. Fixa Next.js 15-kompatibilitet
+2. Implementera OAuth2/JWT
+3. Skapa testsuite
+4. Säkerhetsgenomgång
+
 ## Nya Funktioner & Förbättringar ✅
 
 ### Databas & Persistens
@@ -54,20 +75,32 @@
 ## Produktionsplan & Kritiska Gap
 
 ### Tekniska brister att åtgärda
-- **Frontend saknas**: inget dashboard/UI för beslut, briefer, stakeholders eller simulator.
+- **Frontend**: ✅ **DELVIS KLART!** Dashboard med Decision Cards, Briefs, Regwatch, Retention, Nudging - men har Next.js 15-fel.
 - **Persistens**: ✅ **KLART!** PostgreSQL med Prisma schema (10 tabeller), Redis cache, DatabaseStore ersätter MemoryStore.
 - **Säkerhet**: ✅ **DELVIS KLART!** Rate limiting med Redis (100 req/15min GET, 10 req POST), APIError handling, placeholder auth.
-- **Observability**: saknar strukturerad loggning, metrics, tracing och alerting.
+- **Observability**: ✅ **DELVIS KLART!** Grundläggande metrics, men OpenTelemetry/Winston har build-fel.
 - **Testning**: inga unit/integration/E2E-tester; saknar mockar för externa API:er.
 
+### Lösa trådar (Kritiska för produktion)
+- **Next.js 15-fel**: Event handlers kan inte passas till Client Components, searchParams måste awaitas
+- **Observability build-fel**: OpenTelemetry Resource constructor-fel, Winston os-modul-fel
+- **Next.js cache-problem**: ENOENT-fel, saknade moduler i .next/server/
+- **Autentisering**: OAuth2/JWT saknas, bara placeholder auth
+- **Komplett testsuite**: Unit/integration/E2E-tester saknas
+
 ### Prioriterad roadmap (10 veckor)
-1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting. ✅
+1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting. ✅ **DELVIS KLART!**
 2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan. ✅ **KLART!**
-3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering + UI för "magisk inbjudan" & 1‑klick-toggles.
-   - **Ticket A: Retention & Radera allt** – BullMQ-svep för retention per samtyckesprofil, UI-knapp som triggar rensning + audit-logg + export av consent receipt.
-   - **Ticket B: Regwatch v1** – nattligt jobb som hämtar 3–5 källor, normaliserar, versionerar och skapar alerts i regwatch-vyn + ping i post-brief om relevant.
-4. **Vecka 7–8 – Observability**: OpenTelemetry, Prometheus/Grafana, Sentry, kostnadsmetrik per möte.
-5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD samt Teams/Zoom slash-kommandon, "Alltid-på" etiketter och signerad magisk länk som fallback.
+3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering + UI för "magisk inbjudan" & 1‑klick-toggles. ✅ **DELVIS KLART!**
+   - **Ticket A: Retention & Radera allt** – BullMQ-svep för retention per samtyckesprofil, UI-knapp som triggar rensning + audit-logg + export av consent receipt. ✅ **KLART!**
+   - **Ticket B: Regwatch v1** – nattligt jobb som hämtar 3–5 källor, normaliserar, versionerar och skapar alerts i regwatch-vyn + ping i post-brief om relevant. ✅ **KLART!**
+4. **Vecka 7–8 – Observability**: OpenTelemetry, Prometheus/Grafana, Sentry, kostnadsmetrik per möte. ✅ **DELVIS KLART!**
+5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD samt Teams/Zoom slash-kommandon, "Alltid-på" etiketter och signerad magisk länk som fallback. ✅ **DELVIS KLART!**
+
+### Nästa prioritet (Lösa trådar)
+6. **Vecka 11–12 – Fixa kritiska fel**: Next.js 15 event handlers, searchParams, OpenTelemetry build-fel, cache-problem
+7. **Vecka 13–14 – Produktionsredo**: OAuth2/JWT autentisering, komplett testsuite, säkerhetsgenomgång
+8. **Vecka 15–16 – Polish & Launch**: Frontend-polish, performance-optimering, dokumentation, CI/CD
 
 ### Möteskoppling & onboarding
 - **Primär**: "Magisk inbjudan" (unik agentadress) och "1‑klick i kalendern"-toggle i portalen.
