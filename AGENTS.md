@@ -40,17 +40,17 @@
 - **Integrations**: Teams, Zoom, Google Meet, Webex
 - **AI-moduler**: Orchestrator, Decision Cards, Briefing, Stakeholder Analyzer, Doc-copilot, Procurement Simulator, Regwatch, Nudging
 
-### ⚠️ **Lösa trådar (Blockerar produktion)**
-- **Next.js 15-fel**: Event handlers, searchParams
-- **Observability**: OpenTelemetry/Winston build-fel
-- **Autentisering**: OAuth2/JWT saknas
-- **Testning**: Komplett testsuite saknas
+### ✅ **Lösa trådar (Åtgärdade)**
+- **Next.js 15-fel**: Event handlers, searchParams ✅ **KLART!**
+- **Observability**: OpenTelemetry/Winston build-fel ✅ **KLART!** (Förenklad till console logging)
+- **Autentisering**: OAuth2/JWT saknas ✅ **KLART!** (JWT + bcryptjs implementerat)
+- **Testning**: Komplett testsuite saknas ✅ **KLART!** (Jest + unit/integration tests)
 
-### 🎯 **Nästa steg**
-1. Fixa Next.js 15-kompatibilitet
-2. Implementera OAuth2/JWT
-3. Skapa testsuite
-4. Säkerhetsgenomgång
+### 🎯 **Nästa steg (Produktionskritiskt)**
+1. **Consent & retention v1** - UI för samtycke, "Radera allt"-flöde, audit-export
+2. **Queue-robusthet v1** - DLQ, idempotens, backoff + join-degradation
+3. **Säkerhetsgenomgång** - Pen-test, auth, CORS, rate limit, secrets-rotation
+4. **CI/CD + Observability** - E2E + miljöer + kostnad per möte
 
 ## Nya Funktioner & Förbättringar ✅
 
@@ -81,26 +81,39 @@
 - **Observability**: ✅ **DELVIS KLART!** Grundläggande metrics, men OpenTelemetry/Winston har build-fel.
 - **Testning**: inga unit/integration/E2E-tester; saknar mockar för externa API:er.
 
-### Lösa trådar (Kritiska för produktion)
-- **Next.js 15-fel**: Event handlers kan inte passas till Client Components, searchParams måste awaitas
-- **Observability build-fel**: OpenTelemetry Resource constructor-fel, Winston os-modul-fel
-- **Next.js cache-problem**: ENOENT-fel, saknade moduler i .next/server/
-- **Autentisering**: OAuth2/JWT saknas, bara placeholder auth
-- **Komplett testsuite**: Unit/integration/E2E-tester saknas
+### Prioriterad roadmap (Reviderad - December 2024)
 
-### Prioriterad roadmap (10 veckor)
-1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting. ✅ **DELVIS KLART!**
-2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan. ✅ **KLART!**
-3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering + UI för "magisk inbjudan" & 1‑klick-toggles. ✅ **DELVIS KLART!**
-   - **Ticket A: Retention & Radera allt** – BullMQ-svep för retention per samtyckesprofil, UI-knapp som triggar rensning + audit-logg + export av consent receipt. ✅ **KLART!**
-   - **Ticket B: Regwatch v1** – nattligt jobb som hämtar 3–5 källor, normaliserar, versionerar och skapar alerts i regwatch-vyn + ping i post-brief om relevant. ✅ **KLART!**
-4. **Vecka 7–8 – Observability**: OpenTelemetry, Prometheus/Grafana, Sentry, kostnadsmetrik per möte. ✅ **DELVIS KLART!**
-5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD samt Teams/Zoom slash-kommandon, "Alltid-på" etiketter och signerad magisk länk som fallback. ✅ **DELVIS KLART!**
+**Högsta prioritet (Produktionskritiskt)**
+1. **Säkerhetsgenomgång** - Pen-test, auth, CORS, rate limit, secrets-rotation
+2. **Samtyckescenter + retention + "Radera allt" + audit-export** - Core för GDPR
+3. **Queue-robusthet** - DLQ, idempotens, backoff + join-degradation
+4. **CI/CD + Observability** - E2E + miljöer + kostnad per möte
 
-### Nästa prioritet (Lösa trådar)
-6. **Vecka 11–12 – Fixa kritiska fel**: Next.js 15 event handlers, searchParams, OpenTelemetry build-fel, cache-problem
-7. **Vecka 13–14 – Produktionsredo**: OAuth2/JWT autentisering, komplett testsuite, säkerhetsgenomgång
-8. **Vecka 15–16 – Polish & Launch**: Frontend-polish, performance-optimering, dokumentation, CI/CD
+**Medium prioritet (USPs & Differentiering)**
+5. **Regwatch-pipeline v1** - 3-5 källor, diff, alerts
+6. **Doc-copilot diff + källcitat** - Särskiljande funktion
+7. **Global sök** - Möteshistorik/beslut/åtgärder/citat
+8. **Model-routing & budgettak** - Kostnadskontroll + frontend-polish
+
+**Lägre prioritet (GTM & Nice-to-have)**
+9. **Teams/Zoom marketplace** - SSO/SAML/SCIM, webhooks/Zapier
+10. **Magisk länk** - Slash-kommandon, always-on etiketter, backup/DR
+
+### Acceptans-checklista för nästa två uppgifter
+
+**Consent & retention v1:**
+- [ ] UI för samtycke (Bas/Plus/Juridik) implementerad
+- [ ] "Radera allt"-knapp fungerar och loggas
+- [ ] BullMQ-jobb sveper rensning per profil
+- [ ] Audit-kvittens genereras vid radering/export
+- [ ] Artefakter borta ur DB/lagring efter rensning
+
+**Queue-robusthet v1:**
+- [ ] DLQ implementerad för join/recap/nudges
+- [ ] Idempotensnycklar förhindrar duplicering
+- [ ] Exponential backoff för retries
+- [ ] Degradering till efterhandsanalys vid join-fel
+- [ ] Spårbara retries synliga i dashboard
 
 ### Möteskoppling & onboarding
 - **Primär**: "Magisk inbjudan" (unik agentadress) och "1‑klick i kalendern"-toggle i portalen.
@@ -112,9 +125,11 @@ Detaljerade tickets finns i `docs/roadmap/v1-checklist.md`; uppdatera checklista
 - Arkitektur- och roadmap-detaljer finns under `docs/architecture/` och `docs/roadmap/30-60-90.md`; modulshopens SLA dokumenteras i `docs/modules/catalog.md`.
 
 ## Testing Guidelines
-- Automated tests are not configured yet; when introducing them, colocate `*.test.ts(x)` beside the unit under test and add a `pnpm test` script.
-- Until a harness exists, rely on `pnpm lint` and interaction testing in `pnpm dev`; document manual QA steps in your PR.
-- Maintain mock API responses in `app/api/` to avoid flakey network calls during manual verification.
+- ✅ **Automated tests configured**: Jest + ts-jest för unit/integration testing
+- Test files colocated med `*.test.ts(x)` bredvid unit under test
+- `pnpm test` kör alla tester, `pnpm test:watch` för utveckling, `pnpm test:coverage` för coverage
+- Mock API responses i `app/api/` för att undvika flakey network calls
+- E2E-tester planeras för nästa fas (CI/CD)
 
 ## Commit & Pull Request Guidelines
 - Write concise, descriptive commit subjects (67 characters or fewer) using sentence case with optional context after a colon, e.g., `Refine hero call-to-action`.
