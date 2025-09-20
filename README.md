@@ -15,17 +15,50 @@ Postboxen är en AI-driven möteskollega som ansluter till Teams, Zoom, Google M
 pnpm install
 pnpm dev
 ```
-Applikationen startar på `http://localhost:3000`. En `.env.local` behövs (se `.env.example`).
+Applikationen startar på `http://localhost:3000`. 
 
-> **Obs:** Ange `DATABASE_URL` (Postgres) innan du kör `pnpm db:push` för att provisionera databasen.
+### Databas Setup
+```bash
+# Skapa PostgreSQL databas
+createdb postboxen
+
+# Kör Prisma migrations
+pnpm db:push
+```
+
+En `.env.local` behövs med följande variabler:
+```env
+DATABASE_URL="postgresql://evil@localhost:5432/postboxen?schema=public"
+REDIS_URL="redis://localhost:6379"
+AI_ASSISTANT_API_URL="https://api.openai.com/v1"
+AI_ASSISTANT_API_KEY="your-openai-api-key"
+```
 
 ## API-endpoints
 - `POST /api/agents/schedule` – schemalägg agenten för ett möte.
 - `POST /api/agents/summarize` – genererar sammanfattning och kickar igång post-brief + stakeholder-analys.
-- `GET /api/agents/meetings` / `GET /api/agents/meetings/:id` – listar möten och detaljer (briefer, stakeholders, audit).
+- `GET /api/agents/meetings` / `POST /api/agents/meetings` – listar och skapar möten med persistent lagring.
+- `GET /api/agents/meetings/:id` – detaljer (briefer, stakeholders, audit).
 - `POST /api/agents/procurement/simulate` – kravsimulator A/B.
 - `POST /api/agents/documents/analyze` – Doc-copilot diff.
 - `GET /api/agents/regwatch` – aktuella regelförändringar.
+
+## Nya Funktioner ✅
+
+### Databas & Persistens
+- **PostgreSQL**: Fullständig Prisma schema med 10 tabeller
+- **Persistent Storage**: Alla möten, beslut och åtgärder sparas permanent
+- **DatabaseStore**: Ersätter MemoryStore för produktionsklarhet
+
+### Redis & Performance  
+- **Rate Limiting**: 100 req/15min (GET), 10 req (POST) per IP
+- **Caching**: TTL-baserad cache för förbättrad prestanda
+- **Job Queues**: BullMQ för asynkron bearbetning av möten och briefing
+
+### Säkerhet & Robusthet
+- **APIError Handling**: Strukturerad felhantering med HTTP-statuskoder
+- **Graceful Degradation**: Fungerar även när Redis/PostgreSQL inte är tillgänglig
+- **Input Validation**: Zod-validering på alla endpoints
 
 ## Arkitektur
 - **Agents & Events**: `lib/agents/*`, `lib/modules/*` bygger på EventBus med policy/memory-lager.
@@ -38,9 +71,11 @@ Applikationen startar på `http://localhost:3000`. En `.env.local` behövs (se `
 - Viktiga moduler: Briefing Engine, Decision Cards, Stakeholder Analyzer, Doc Copilot, Regulation Watcher.
 
 ## Nästa steg
-- Jobbkedja för 48h-nudging (BullMQ/Cloud Tasks)
-- Modulshop v1 (Juridik-Gunnar, Upphandling-Saga, HR-Eva, Ekonomi-Stefan)
-- Persistenslager för regelförändringar och stakeholder-profiler
+- **Frontend Dashboard**: UI för Decision Cards, Briefs och Meeting timeline
+- **Authentication**: JWT-baserad autentisering och auktorisering
+- **Testing Suite**: Automatiserade tester för alla komponenter
+- **Monitoring**: Observability, metrics och alerting
+- **Modulshop v1**: Juridik-Gunnar, Upphandling-Saga, HR-Eva, Ekonomi-Stefan
 
 ---
 Byggt för svenska SMB som vill automatisera mötesrutiner och maximera beslutsfattande utan att tumma på compliance.

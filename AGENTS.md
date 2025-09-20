@@ -31,18 +31,38 @@
 - Doc-copilot hittas under `app/api/agents/documents/analyze`; skicka nuvarande + föreslagen text så returneras diff-segment och källrekommendationer.
 - Regelförändringsvakten (`app/api/agents/regwatch`) listar aktuella ändringar i AI Act, GDPR och LOU med rekommendationer.
 
+## Nya Funktioner & Förbättringar ✅
+
+### Databas & Persistens
+- **PostgreSQL Integration**: Fullständig Prisma schema med 10 tabeller (Meeting, DecisionCard, ActionItem, MeetingBrief, Stakeholder, etc.)
+- **DatabaseStore**: Ersätter MemoryStore med persistent lagring i PostgreSQL
+- **Meeting Repository**: CRUD-operationer för möten via `lib/db/repositories/meetings.ts`
+- **API Integration**: POST/GET `/api/agents/meetings` fungerar med databas
+
+### Redis & Performance
+- **Rate Limiting**: Redis-baserad rate limiting (100 req/15min GET, 10 req POST)
+- **Caching Service**: Generisk cache med TTL och pattern-invalidering
+- **Job Queues**: BullMQ-integration för meeting-processing, briefing och notifications
+- **Redis Client**: Robust Redis-klient med fallback när Redis inte är tillgänglig
+
+### Säkerhet & Robusthet
+- **APIError Class**: Strukturerad felhantering med HTTP-statuskoder
+- **Rate Limit Enforcement**: IP-baserad rate limiting med Redis-counters
+- **Graceful Degradation**: Systemet fungerar även när Redis/PostgreSQL inte är tillgänglig
+- **Error Handling**: Robust felhantering i alla API-endpoints
+
 ## Produktionsplan & Kritiska Gap
 
 ### Tekniska brister att åtgärda
 - **Frontend saknas**: inget dashboard/UI för beslut, briefer, stakeholders eller simulator.
-- **Persistens**: all data ligger i `MemoryStore`; kräver Postgres/Redis + backupstrategi.
-- **Säkerhet**: ingen auth, rate limiting, input-säkring eller secrets management.
+- **Persistens**: ✅ **KLART!** PostgreSQL med Prisma schema (10 tabeller), Redis cache, DatabaseStore ersätter MemoryStore.
+- **Säkerhet**: ✅ **DELVIS KLART!** Rate limiting med Redis (100 req/15min GET, 10 req POST), APIError handling, placeholder auth.
 - **Observability**: saknar strukturerad loggning, metrics, tracing och alerting.
 - **Testning**: inga unit/integration/E2E-tester; saknar mockar för externa API:er.
 
 ### Prioriterad roadmap (10 veckor)
 1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting. ✅
-2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan. _(pågår – Prisma schema klus klart, nästa steg migrera logik)_.
+2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan. ✅ **KLART!**
 3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering + UI för "magisk inbjudan" & 1‑klick-toggles.
 4. **Vecka 7–8 – Observability**: OpenTelemetry, Prometheus/Grafana, Sentry, kostnadsmetrik per möte.
 5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD samt Teams/Zoom slash-kommandon, "Alltid-på" etiketter och signerad magisk länk som fallback.

@@ -1,39 +1,78 @@
-import { env } from "@/lib/config"
+import { NextRequest } from "next/server"
+import { getRedisClient } from "@/lib/redis/client"
 import { ApiError } from "@/lib/http/errors"
 
-interface RateEntry {
-  count: number
-  reset: number
+interface RateLimitConfig {
+  windowMs: number
+  maxRequests: number
+  keyGenerator?: (request: NextRequest) => string
 }
 
-const buckets = new Map<string, RateEntry>()
-
-const now = () => Date.now()
-
-const keyFromRequest = (request: Request) => {
-  const forwarded = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip")
-  if (forwarded) {
-    return forwarded.split(",")[0].trim()
+const defaultConfig: RateLimitConfig = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 100,
+  keyGenerator: (request) => {
+    const forwarded = request.headers.get("x-forwarded-for")
+    const ip = forwarded ? forwarded.split(",")[0] : request.ip || "unknown"
+    return `rate_limit:${ip}`
   }
-  // @ts-expect-error – NextRequest har ip-fält
-  const ip = (request as any).ip
-  return ip ?? "global"
 }
 
-export const enforceRateLimit = (request: Request) => {
-  const key = keyFromRequest(request)
-  const entry = buckets.get(key)
-  const timestamp = now()
-
-  if (!entry || entry.reset < timestamp) {
-    buckets.set(key, { count: 1, reset: timestamp + env.RATE_LIMIT_WINDOW_MS })
+export async function enforceRateLimit(
+  request: NextRequest, 
+  config: Partial<RateLimitConfig> = {}
+): Promise<void> {
+  const redis = getRedisClient()
+  if (!redis) {
+    // Redis not available, skip rate limiting
     return
   }
 
-  if (entry.count >= env.RATE_LIMIT_MAX) {
-    const retryAfter = Math.ceil((entry.reset - timestamp) / 1000)
-    throw new ApiError(429, `Rate limit exceeded. Försök igen om ${retryAfter}s`)
+  const finalConfig = { ...defaultConfig, ...config }
+  const key = finalConfig.keyGenerator!(request)
+  
+  try {
+    const current = await redis.incr(key)
+    
+    if (current === 1) {
+      // First request in window, set expiration
+      await redis.expire(key, Math.ceil(finalConfig.windowMs / 1000))
+    }
+    
+    if (current > finalConfig.maxRequests) {
+      throw new ApiError("Rate limit exceeded", 429)
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error
+    }
+    // Redis error, log but don't block request
+    console.error("Rate limiting error:", error)
+  }
+}
+
+export async function getRateLimitInfo(
+  request: NextRequest,
+  config: Partial<RateLimitConfig> = {}
+): Promise<{ remaining: number; resetTime: number }> {
+  const redis = getRedisClient()
+  if (!redis) {
+    return { remaining: 999, resetTime: Date.now() + 15 * 60 * 1000 }
   }
 
-  entry.count += 1
+  const finalConfig = { ...defaultConfig, ...config }
+  const key = finalConfig.keyGenerator!(request)
+  
+  try {
+    const current = await redis.get(key)
+    const ttl = await redis.ttl(key)
+    
+    return {
+      remaining: Math.max(0, finalConfig.maxRequests - (parseInt(current || "0"))),
+      resetTime: Date.now() + (ttl * 1000)
+    }
+  } catch (error) {
+    console.error("Rate limit info error:", error)
+    return { remaining: 999, resetTime: Date.now() + 15 * 60 * 1000 }
+  }
 }

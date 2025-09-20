@@ -1,9 +1,9 @@
-import { Brain, ChessKnight, Users, TrendingUp } from "lucide-react"
+import { Brain, Crown, Users, TrendingUp } from "lucide-react"
 
 export function ServicesSection() {
   const services = [
     {
-      icon: <ChessKnight className="h-12 w-12 text-orange-500" />,
+      icon: <Crown className="h-12 w-12 text-orange-500" />,
       title: "Ledarskapsutbildning",
       description:
         "Som en ninja-mästare guidar sin lärling, utvecklar vi moderna och effektiva ledare genom skräddarsydda program som kombinerar praktisk träning med teoretisk förståelse.",

@@ -1,7 +1,7 @@
 import { Mail, Phone, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export default function ContactSection() {
+export function ContactSection() {
   return (
     <section className="py-16 bg-[#2a2a2a] relative">
       <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,58,47,0.05)] to-[rgba(255,215,0,0.05)]"></div>

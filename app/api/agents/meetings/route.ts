@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/http/errors"
 
 export async function GET(request: NextRequest) {
   try {
-    enforceRateLimit(request)
+    await enforceRateLimit(request)
     await authenticateRequest(request, ["agent:read"])
 
     ensureAgentBootstrap()
@@ -19,6 +19,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error("Fel vid hämtning av möten", error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    await enforceRateLimit(request, { maxRequests: 10 }) // Stricter limit for POST
+    await authenticateRequest(request, ["agent:write"])
+
+    ensureAgentBootstrap()
+    const body = await request.json()
+    
+    const meeting = await meetingRepository.createMeeting(body)
+    return NextResponse.json({ meeting }, { status: 201 })
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error("Fel vid skapande av möte", error)
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

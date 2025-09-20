@@ -43,6 +43,7 @@ const EnvSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(120),
   MEMORY_DEFAULT_TTL_MS: z.coerce.number().default(86_400_000),
   DATABASE_URL: z.string(),
+  REDIS_URL: z.string().optional(),
 })
 
 const parsed = EnvSchema.safeParse({
@@ -88,6 +89,7 @@ const parsed = EnvSchema.safeParse({
   RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX,
   MEMORY_DEFAULT_TTL_MS: process.env.MEMORY_DEFAULT_TTL_MS,
   DATABASE_URL: process.env.DATABASE_URL,
+  REDIS_URL: process.env.REDIS_URL,
 })
 
 if (!parsed.success) {
