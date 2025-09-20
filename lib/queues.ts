@@ -196,3 +196,36 @@ export const queueNotification = async (meetingId: string, type: 'brief' | 'remi
     content,
   })
 }
+
+export const addRetentionJob = async (meetingId: string, retentionDate: Date, config: any) => {
+  const queue = getMeetingQueue()
+  if (!queue) return null
+
+  return await queue.add('retention-cleanup', {
+    meetingId,
+    config,
+  }, {
+    delay: retentionDate.getTime() - Date.now(),
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
+    },
+  })
+}
+
+export const addRegwatchJob = async (scheduledTime: Date) => {
+  const queue = getMeetingQueue()
+  if (!queue) return null
+
+  return await queue.add('regwatch-check', {
+    action: 'check_sources',
+  }, {
+    delay: scheduledTime.getTime() - Date.now(),
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 2000,
+    },
+  })
+}

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { meetingRepository } from "@/lib/db/repositories/meetings"
 import { regwatchRepository } from "@/lib/db/repositories/regwatch"
+import { RetentionCard } from "./components/retention-card"
+import { RegwatchCard } from "./components/regwatch-card"
 
 const dateFormatter = new Intl.DateTimeFormat("sv-SE", {
   day: "2-digit",
@@ -260,7 +262,7 @@ export default async function AgentsDashboardPage() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-5">
         <Card className="border-border/60 bg-card/60">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -373,6 +375,20 @@ export default async function AgentsDashboardPage() {
             </Button>
           </CardFooter>
         </Card>
+
+        <RetentionCard 
+          userEmail="admin@postboxen.se" 
+          profile="juridik"
+          onRetentionComplete={(result) => {
+            console.log("Retention completed:", result)
+          }}
+        />
+
+        <RegwatchCard 
+          onRegwatchUpdate={(results) => {
+            console.log("Regwatch updated:", results)
+          }}
+        />
       </section>
     </div>
   )
