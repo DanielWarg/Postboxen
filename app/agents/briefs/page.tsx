@@ -32,10 +32,11 @@ const briefStats = (briefs: Awaited<ReturnType<typeof meetingRepository.getRecen
   return { total, meetings, lastGenerated }
 }
 
-export default async function BriefsPage({ searchParams }: { searchParams?: SearchParams }) {
-  const typeFilter = searchParams?.type
-  const query = searchParams?.q?.trim()
-  const limitParam = searchParams?.limit ? Number.parseInt(searchParams.limit, 10) : undefined
+export default async function BriefsPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+  const resolvedSearchParams = await searchParams
+  const typeFilter = resolvedSearchParams?.type
+  const query = resolvedSearchParams?.q?.trim()
+  const limitParam = resolvedSearchParams?.limit ? Number.parseInt(resolvedSearchParams.limit, 10) : undefined
   const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 5), 100) : 50
 
   const filters = {

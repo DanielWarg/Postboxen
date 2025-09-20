@@ -31,10 +31,11 @@ const formatDecidedAt = (value?: string) => {
 const toPersonaKey = (persona?: string | null) => persona ?? UNKNOWN_PERSONA_VALUE
 const personaLabel = (persona?: string | null) => persona ?? "Okänd persona"
 
-export default async function DecisionCardsPage({ searchParams }: { searchParams?: SearchParams }) {
-  const personaParamRaw = searchParams?.persona ?? undefined
-  const queryParam = searchParams?.q?.trim() || undefined
-  const limitParam = searchParams?.limit ? Number.parseInt(searchParams.limit, 10) : undefined
+export default async function DecisionCardsPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+  const resolvedSearchParams = await searchParams
+  const personaParamRaw = resolvedSearchParams?.persona ?? undefined
+  const queryParam = resolvedSearchParams?.q?.trim() || undefined
+  const limitParam = resolvedSearchParams?.limit ? Number.parseInt(resolvedSearchParams.limit, 10) : undefined
   const limit = Number.isFinite(limitParam) && limitParam ? Math.min(Math.max(limitParam, 5), 100) : 50
 
   const personaFilter =

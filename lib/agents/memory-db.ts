@@ -16,15 +16,17 @@ import { env } from "@/lib/config"
 
 class DatabaseStore {
   async appendTranscript(meetingId: string, segment: MeetingTranscriptSegment) {
-    // Store transcript segments in the meeting's JSON field or create a separate table
-    // For now, we'll store in the meeting's attendees field as JSON
-    await prisma.meeting.update({
-      where: { id: meetingId },
+    // Store transcript segments in the dedicated transcriptSegments table
+    await prisma.transcriptSegment.create({
       data: {
-        attendees: {
-          // This is a simplified approach - in production you'd want a separate transcript table
-          push: segment
-        }
+        id: segment.id,
+        meetingId: meetingId,
+        speaker: segment.speaker,
+        text: segment.text,
+        timestamp: segment.timestamp,
+        confidence: segment.confidence,
+        language: segment.language,
+        redacted: segment.redacted,
       }
     })
   }
@@ -247,7 +249,15 @@ class DatabaseStore {
       createdAt: meeting.createdAt.getTime(),
       expiresAt: meeting.createdAt.getTime() + env.MEMORY_DEFAULT_TTL_MS,
       consent: meeting.consent,
-      transcript: [], // TODO: Implement transcript storage
+      transcript: meeting.transcriptSegments?.map(t => ({
+        id: t.id,
+        speaker: t.speaker,
+        text: t.text,
+        timestamp: t.timestamp,
+        confidence: t.confidence,
+        language: t.language,
+        redacted: t.redacted,
+      })) || []
       decisionCards: meeting.decisions.map(d => ({
         id: d.id,
         headline: d.headline,

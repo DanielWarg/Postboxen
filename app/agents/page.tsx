@@ -376,19 +376,12 @@ export default async function AgentsDashboardPage() {
           </CardFooter>
         </Card>
 
-        <RetentionCard 
-          userEmail="admin@postboxen.se" 
+        <RetentionCard
+          userEmail="admin@postboxen.se"
           profile="juridik"
-          onRetentionComplete={(result) => {
-            console.log("Retention completed:", result)
-          }}
         />
 
-        <RegwatchCard 
-          onRegwatchUpdate={(results) => {
-            console.log("Regwatch updated:", results)
-          }}
-        />
+        <RegwatchCard />
       </section>
     </div>
   )

@@ -22,10 +22,11 @@ const severityOptions = [
   { value: "info", label: "Info" },
 ]
 
-export default async function RegwatchPage({ searchParams }: { searchParams?: SearchParams }) {
-  const severityFilter = searchParams?.severity
-  const jurisdictionFilter = searchParams?.jurisdiction
-  const query = searchParams?.q?.trim()
+export default async function RegwatchPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+  const resolvedSearchParams = await searchParams
+  const severityFilter = resolvedSearchParams?.severity
+  const jurisdictionFilter = resolvedSearchParams?.jurisdiction
+  const query = resolvedSearchParams?.q?.trim()
 
   const sources = await regwatchRepository.list({
     severity: severityFilter,

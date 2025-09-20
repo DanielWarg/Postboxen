@@ -1,5 +1,6 @@
 import { Queue, Worker, Job } from "bullmq"
 import { getRedisClient } from "@/lib/redis/client"
+import { processNudgingJob, processNotificationJob as processNudgingNotificationJob, type NudgingJobData, type NotificationJobData } from "@/lib/agents/nudging"
 
 // Job types
 export interface MeetingProcessingJob {
@@ -27,6 +28,8 @@ export interface NotificationJob {
 let meetingQueue: Queue<MeetingProcessingJob> | null = null
 let briefingQueue: Queue<BriefingJob> | null = null
 let notificationQueue: Queue<NotificationJob> | null = null
+let nudgingQueue: Queue<NudgingJobData> | null = null
+let nudgingNotificationQueue: Queue<NotificationJobData> | null = null
 
 export const getMeetingQueue = () => {
   if (!meetingQueue) {
@@ -89,6 +92,48 @@ export const getNotificationQueue = () => {
     })
   }
   return notificationQueue
+}
+
+export const getNudgingQueue = () => {
+  if (!nudgingQueue) {
+    const redis = getRedisClient()
+    if (!redis) return null
+    
+    nudgingQueue = new Queue<NudgingJobData>('nudging', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    })
+  }
+  return nudgingQueue
+}
+
+export const getNudgingNotificationQueue = () => {
+  if (!nudgingNotificationQueue) {
+    const redis = getRedisClient()
+    if (!redis) return null
+    
+    nudgingNotificationQueue = new Queue<NotificationJobData>('nudging-notifications', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 200,
+        removeOnFail: 100,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    })
+  }
+  return nudgingNotificationQueue
 }
 
 // Job processors
@@ -156,6 +201,18 @@ export const startWorkers = () => {
   new Worker<NotificationJob>('notifications', processNotificationJob, {
     connection: redis,
     concurrency: 3,
+  })
+
+  // Nudging worker
+  new Worker<NudgingJobData>('nudging', processNudgingJob, {
+    connection: redis,
+    concurrency: 2,
+  })
+
+  // Nudging notification worker
+  new Worker<NotificationJobData>('nudging-notifications', processNudgingNotificationJob, {
+    connection: redis,
+    concurrency: 5,
   })
 
   console.log("Job workers started")
@@ -226,6 +283,64 @@ export const addRegwatchJob = async (scheduledTime: Date) => {
     backoff: {
       type: 'exponential',
       delay: 2000,
+    },
+  })
+}
+
+// Nudging helper functions
+export const scheduleNudging = async (
+  meetingId: string,
+  userId: string,
+  userEmail: string,
+  nudgingType: "follow_up" | "deadline_reminder" | "action_required" | "meeting_prep",
+  delayMs: number = 0,
+  config: any = {}
+) => {
+  const queue = getNudgingQueue()
+  if (!queue) return null
+
+  return await queue.add('nudging', {
+    meetingId,
+    userId,
+    userEmail,
+    nudgingType,
+    config: {
+      delay: delayMs,
+      maxAttempts: 3,
+      priority: 'medium',
+      ...config,
+    },
+  }, {
+    delay: delayMs,
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 2000,
+    },
+  })
+}
+
+export const addNotificationJob = async (
+  userId: string,
+  recipients: string[],
+  type: "email" | "teams" | "slack" | "push",
+  template: string,
+  data: any
+) => {
+  const queue = getNudgingNotificationQueue()
+  if (!queue) return null
+
+  return await queue.add('notification', {
+    userId,
+    recipients,
+    type,
+    template,
+    data,
+  }, {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
     },
   })
 }
