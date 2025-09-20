@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
+import { z } from "zod"
 import { env } from "@/lib/config"
 import { ApiError } from "@/lib/http/errors"
+import { createLogger } from "@/lib/observability/logger"
+import { redactPII } from "@/lib/security/middleware"
 
 export interface User {
   id: string
@@ -23,14 +26,38 @@ export interface JWTPayload {
   aud?: string
 }
 
+// User schema validation
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string().min(1),
+  scopes: z.array(z.string()),
+  createdAt: z.string().optional(),
+  lastLogin: z.string().optional(),
+  failedLoginAttempts: z.number().default(0),
+  lockedUntil: z.string().optional(),
+})
+
+// Login attempt tracking
+const loginAttempts = new Map<string, { count: number; lastAttempt: Date; lockedUntil?: Date }>()
+
 // Mock users for development (replace with database in production)
-const MOCK_USERS: Record<string, { id: string; email: string; name: string; passwordHash: string; scopes: string[] }> = {
+const MOCK_USERS: Record<string, { 
+  id: string
+  email: string
+  name: string
+  passwordHash: string
+  scopes: string[]
+  failedLoginAttempts: number
+  lockedUntil?: Date
+}> = {
   "admin@postboxen.se": {
     id: "admin-user-123",
     email: "admin@postboxen.se",
     name: "Admin User",
     passwordHash: bcrypt.hashSync("admin123", 10), // Change this in production
     scopes: ["agent:read", "agent:write", "admin"],
+    failedLoginAttempts: 0,
   },
   "user@postboxen.se": {
     id: "regular-user-456",
@@ -38,10 +65,11 @@ const MOCK_USERS: Record<string, { id: string; email: string; name: string; pass
     name: "Regular User",
     passwordHash: bcrypt.hashSync("user123", 10), // Change this in production
     scopes: ["agent:read"],
+    failedLoginAttempts: 0,
   },
 }
 
-// Generate JWT token
+// Generate JWT token with shorter expiration for security
 export const generateToken = (user: User): string => {
   const payload: JWTPayload = {
     userId: user.id,
@@ -50,7 +78,21 @@ export const generateToken = (user: User): string => {
   }
 
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: "24h",
+    expiresIn: "15m", // Shorter expiration for security
+    issuer: env.JWT_ISSUER,
+    audience: env.JWT_AUDIENCE,
+  })
+}
+
+// Generate refresh token
+export const generateRefreshToken = (user: User): string => {
+  const payload = {
+    userId: user.id,
+    type: 'refresh',
+  }
+
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: "7d", // Longer expiration for refresh token
     issuer: env.JWT_ISSUER,
     audience: env.JWT_AUDIENCE,
   })
@@ -73,18 +115,71 @@ export const verifyToken = (token: string): JWTPayload => {
   }
 }
 
-// Authenticate user with email/password
-export const authenticateUser = async (email: string, password: string): Promise<User> => {
-  const mockUser = MOCK_USERS[email.toLowerCase()]
+// Check if account is locked
+const isAccountLocked = (email: string): boolean => {
+  const attempts = loginAttempts.get(email.toLowerCase())
+  if (!attempts) return false
+  
+  if (attempts.lockedUntil && attempts.lockedUntil > new Date()) {
+    return true
+  }
+  
+  // Clear lock if expired
+  if (attempts.lockedUntil && attempts.lockedUntil <= new Date()) {
+    loginAttempts.delete(email.toLowerCase())
+  }
+  
+  return false
+}
+
+// Record failed login attempt
+const recordFailedAttempt = (email: string): void => {
+  const attempts = loginAttempts.get(email.toLowerCase()) || { count: 0, lastAttempt: new Date() }
+  attempts.count++
+  attempts.lastAttempt = new Date()
+  
+  // Lock account after 5 failed attempts for 15 minutes
+  if (attempts.count >= 5) {
+    attempts.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+  }
+  
+  loginAttempts.set(email.toLowerCase(), attempts)
+}
+
+// Clear failed attempts on successful login
+const clearFailedAttempts = (email: string): void => {
+  loginAttempts.delete(email.toLowerCase())
+}
+
+// Authenticate user with email/password and security checks
+export const authenticateUser = async (email: string, password: string, request: NextRequest): Promise<User> => {
+  const logger = createLogger(request.headers.get('x-correlation-id'))
+  const normalizedEmail = email.toLowerCase()
+  
+  // Check if account is locked
+  if (isAccountLocked(normalizedEmail)) {
+    logger.warn('Login attempt on locked account', { email: redactPII({ email: normalizedEmail }) })
+    throw new ApiError("Kontot är tillfälligt låst på grund av för många misslyckade inloggningsförsök", 423)
+  }
+  
+  const mockUser = MOCK_USERS[normalizedEmail]
   if (!mockUser) {
+    logger.warn('Login attempt with unknown email', { email: redactPII({ email: normalizedEmail }) })
     throw new ApiError("Ogiltiga användaruppgifter", 401)
   }
 
   const isPasswordValid = await bcrypt.compare(password, mockUser.passwordHash)
   if (!isPasswordValid) {
+    recordFailedAttempt(normalizedEmail)
+    logger.warn('Failed login attempt', { email: redactPII({ email: normalizedEmail }) })
     throw new ApiError("Ogiltiga användaruppgifter", 401)
   }
 
+  // Clear failed attempts on successful login
+  clearFailedAttempts(normalizedEmail)
+  
+  logger.info('Successful login', { userId: mockUser.id, email: redactPII({ email: normalizedEmail }) })
+  
   return {
     id: mockUser.id,
     email: mockUser.email,
