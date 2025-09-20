@@ -9,12 +9,16 @@ export interface MeetingProcessingJob {
   summary?: any
   decisions?: any[]
   actionItems?: any[]
+  idempotencyKey?: string
+  retryCount?: number
 }
 
 export interface BriefingJob {
   meetingId: string
   type: 'pre' | 'post'
   scheduledTime: Date
+  idempotencyKey?: string
+  retryCount?: number
 }
 
 export interface NotificationJob {
@@ -22,6 +26,18 @@ export interface NotificationJob {
   type: 'brief' | 'reminder' | 'summary'
   recipients: string[]
   content: any
+  idempotencyKey?: string
+  retryCount?: number
+}
+
+export interface DeadLetterJob {
+  originalJobId: string
+  originalQueue: string
+  originalData: any
+  failureReason: string
+  failedAt: Date
+  retryCount: number
+  canRetry: boolean
 }
 
 // Queue instances
@@ -30,6 +46,7 @@ let briefingQueue: Queue<BriefingJob> | null = null
 let notificationQueue: Queue<NotificationJob> | null = null
 let nudgingQueue: Queue<NudgingJobData> | null = null
 let nudgingNotificationQueue: Queue<NotificationJobData> | null = null
+let deadLetterQueue: Queue<DeadLetterJob> | null = null
 
 export const getMeetingQueue = () => {
   if (!meetingQueue) {
@@ -46,6 +63,11 @@ export const getMeetingQueue = () => {
           type: 'exponential',
           delay: 2000,
         },
+      },
+      // DLQ configuration
+      settings: {
+        stalledInterval: 30 * 1000,
+        maxStalledCount: 1,
       },
     })
   }
@@ -68,6 +90,11 @@ export const getBriefingQueue = () => {
           delay: 5000,
         },
       },
+      // DLQ configuration
+      settings: {
+        stalledInterval: 30 * 1000,
+        maxStalledCount: 1,
+      },
     })
   }
   return briefingQueue
@@ -88,6 +115,11 @@ export const getNotificationQueue = () => {
           type: 'exponential',
           delay: 1000,
         },
+      },
+      // DLQ configuration
+      settings: {
+        stalledInterval: 30 * 1000,
+        maxStalledCount: 1,
       },
     })
   }
@@ -110,6 +142,11 @@ export const getNudgingQueue = () => {
           delay: 2000,
         },
       },
+      // DLQ configuration
+      settings: {
+        stalledInterval: 30 * 1000,
+        maxStalledCount: 1,
+      },
     })
   }
   return nudgingQueue
@@ -131,50 +168,140 @@ export const getNudgingNotificationQueue = () => {
           delay: 1000,
         },
       },
+      // DLQ configuration
+      settings: {
+        stalledInterval: 30 * 1000,
+        maxStalledCount: 1,
+      },
     })
   }
   return nudgingNotificationQueue
 }
 
-// Job processors
+// Dead Letter Queue
+export const getDeadLetterQueue = () => {
+  if (!deadLetterQueue) {
+    const redis = getRedisClient()
+    if (!redis) return null
+    
+    deadLetterQueue = new Queue<DeadLetterJob>('dead-letter', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 1000,
+        removeOnFail: 500,
+        attempts: 1, // DLQ jobs should not retry
+      },
+    })
+  }
+  return deadLetterQueue
+}
+
+// Job processors with idempotency and DLQ support
 export const processMeetingJob = async (job: Job<MeetingProcessingJob>) => {
-  const { meetingId, transcript, summary, decisions, actionItems } = job.data
+  const { meetingId, transcript, summary, decisions, actionItems, idempotencyKey, retryCount = 0 } = job.data
   
-  console.log(`Processing meeting ${meetingId}`)
-  
-  // TODO: Implement actual meeting processing logic
-  // - Generate AI summary
-  // - Extract decisions
-  // - Identify action items
-  // - Update database
-  
-  return { success: true, meetingId }
+  try {
+    console.log(`Processing meeting ${meetingId} (attempt ${retryCount + 1})`)
+    
+    // Check idempotency
+    if (idempotencyKey && await checkIdempotency(idempotencyKey)) {
+      console.log(`Job ${job.id} already processed (idempotency key: ${idempotencyKey})`)
+      return { success: true, meetingId, skipped: true }
+    }
+    
+    // TODO: Implement actual meeting processing logic
+    // - Generate AI summary
+    // - Extract decisions
+    // - Identify action items
+    // - Update database
+    
+    // Mark as processed if idempotency key exists
+    if (idempotencyKey) {
+      await setIdempotencyKey(idempotencyKey, { meetingId, processedAt: new Date().toISOString() })
+    }
+    
+    return { success: true, meetingId }
+  } catch (error) {
+    console.error(`Meeting processing failed for ${meetingId}:`, error)
+    
+    // Send to DLQ if max attempts reached
+    if (job.attemptsMade >= (job.opts.attempts || 3)) {
+      await sendToDeadLetterQueue(job, 'meeting-processing', error as Error)
+    }
+    
+    throw error
+  }
 }
 
 export const processBriefingJob = async (job: Job<BriefingJob>) => {
-  const { meetingId, type, scheduledTime } = job.data
+  const { meetingId, type, scheduledTime, idempotencyKey, retryCount = 0 } = job.data
   
-  console.log(`Generating ${type} briefing for meeting ${meetingId}`)
-  
-  // TODO: Implement briefing generation logic
-  // - Generate pre-brief 30 min before meeting
-  // - Generate post-brief after meeting
-  // - Send via email
-  
-  return { success: true, meetingId, type }
+  try {
+    console.log(`Generating ${type} briefing for meeting ${meetingId} (attempt ${retryCount + 1})`)
+    
+    // Check idempotency
+    if (idempotencyKey && await checkIdempotency(idempotencyKey)) {
+      console.log(`Briefing job ${job.id} already processed (idempotency key: ${idempotencyKey})`)
+      return { success: true, meetingId, type, skipped: true }
+    }
+    
+    // TODO: Implement briefing generation logic with graceful degradation
+    // - Generate pre-brief 30 min before meeting
+    // - Generate post-brief after meeting
+    // - Send via email
+    // - If join fails, fall back to post-meeting analysis
+    
+    // Mark as processed if idempotency key exists
+    if (idempotencyKey) {
+      await setIdempotencyKey(idempotencyKey, { meetingId, type, processedAt: new Date().toISOString() })
+    }
+    
+    return { success: true, meetingId, type }
+  } catch (error) {
+    console.error(`Briefing generation failed for ${meetingId}:`, error)
+    
+    // Send to DLQ if max attempts reached
+    if (job.attemptsMade >= (job.opts.attempts || 2)) {
+      await sendToDeadLetterQueue(job, 'briefing', error as Error)
+    }
+    
+    throw error
+  }
 }
 
 export const processNotificationJob = async (job: Job<NotificationJob>) => {
-  const { meetingId, type, recipients, content } = job.data
+  const { meetingId, type, recipients, content, idempotencyKey, retryCount = 0 } = job.data
   
-  console.log(`Sending ${type} notification for meeting ${meetingId} to ${recipients.length} recipients`)
-  
-  // TODO: Implement notification logic
-  // - Send email notifications
-  // - Send Teams/Slack messages
-  // - Update meeting status
-  
-  return { success: true, meetingId, type, recipients: recipients.length }
+  try {
+    console.log(`Sending ${type} notification for meeting ${meetingId} to ${recipients.length} recipients (attempt ${retryCount + 1})`)
+    
+    // Check idempotency
+    if (idempotencyKey && await checkIdempotency(idempotencyKey)) {
+      console.log(`Notification job ${job.id} already processed (idempotency key: ${idempotencyKey})`)
+      return { success: true, meetingId, type, recipients: recipients.length, skipped: true }
+    }
+    
+    // TODO: Implement notification logic
+    // - Send email notifications
+    // - Send Teams/Slack messages
+    // - Update meeting status
+    
+    // Mark as processed if idempotency key exists
+    if (idempotencyKey) {
+      await setIdempotencyKey(idempotencyKey, { meetingId, type, recipients: recipients.length, processedAt: new Date().toISOString() })
+    }
+    
+    return { success: true, meetingId, type, recipients: recipients.length }
+  } catch (error) {
+    console.error(`Notification failed for ${meetingId}:`, error)
+    
+    // Send to DLQ if max attempts reached
+    if (job.attemptsMade >= (job.opts.attempts || 3)) {
+      await sendToDeadLetterQueue(job, 'notifications', error as Error)
+    }
+    
+    throw error
+  }
 }
 
 // Retention job processing
@@ -195,6 +322,67 @@ export const processRetentionJob = async (job: Job<{ meetingId: string; config: 
   } catch (error) {
     console.error(`Retention job failed for meeting ${meetingId}:`, error)
     throw error
+  }
+}
+
+// Dead Letter Queue processor
+export const processDeadLetterJob = async (job: Job<DeadLetterJob>) => {
+  const { originalJobId, originalQueue, originalData, failureReason, failedAt, retryCount, canRetry } = job.data
+  
+  console.log(`Processing dead letter job ${originalJobId} from queue ${originalQueue}`)
+  console.log(`Failure reason: ${failureReason}`)
+  console.log(`Failed at: ${failedAt}`)
+  console.log(`Retry count: ${retryCount}`)
+  console.log(`Can retry: ${canRetry}`)
+  
+  // TODO: Implement dead letter handling logic
+  // - Log to monitoring system
+  // - Send alerts to administrators
+  // - Attempt manual recovery if possible
+  // - Store for manual review
+  
+  return { success: true, originalJobId, processed: true }
+}
+
+// Idempotency helpers
+export const checkIdempotency = async (key: string): Promise<boolean> => {
+  const redis = getRedisClient()
+  if (!redis) return false
+  
+  const exists = await redis.exists(`idempotency:${key}`)
+  return exists === 1
+}
+
+export const setIdempotencyKey = async (key: string, data: any): Promise<void> => {
+  const redis = getRedisClient()
+  if (!redis) return
+  
+  // Store idempotency key for 24 hours
+  await redis.setex(`idempotency:${key}`, 86400, JSON.stringify(data))
+}
+
+export const sendToDeadLetterQueue = async (job: Job<any>, queueName: string, error: Error): Promise<void> => {
+  const dlq = getDeadLetterQueue()
+  if (!dlq) {
+    console.error(`Cannot send job ${job.id} to DLQ: Dead letter queue not available`)
+    return
+  }
+  
+  const deadLetterJob: DeadLetterJob = {
+    originalJobId: job.id || 'unknown',
+    originalQueue: queueName,
+    originalData: job.data,
+    failureReason: error.message,
+    failedAt: new Date(),
+    retryCount: job.attemptsMade || 0,
+    canRetry: (job.attemptsMade || 0) < 5, // Allow manual retry up to 5 times
+  }
+  
+  try {
+    await dlq.add('dead-letter-job', deadLetterJob)
+    console.log(`Job ${job.id} sent to dead letter queue`)
+  } catch (dlqError) {
+    console.error(`Failed to send job ${job.id} to DLQ:`, dlqError)
   }
 }
 
@@ -242,20 +430,30 @@ export const startWorkers = () => {
     concurrency: 1,
   })
 
-  console.log("Job workers started")
+  // Dead Letter Queue worker
+  new Worker<DeadLetterJob>('dead-letter', processDeadLetterJob, {
+    connection: redis,
+    concurrency: 1,
+  })
+
+  console.log("Job workers started (with DLQ support)")
 }
 
-// Helper functions
+// Helper functions with idempotency support
 export const scheduleBriefing = async (meetingId: string, scheduledTime: Date, type: 'pre' | 'post') => {
   const queue = getBriefingQueue()
   if (!queue) return null
+
+  const idempotencyKey = `briefing_${meetingId}_${type}_${scheduledTime.getTime()}`
 
   return await queue.add('briefing', {
     meetingId,
     type,
     scheduledTime,
+    idempotencyKey,
   }, {
     delay: scheduledTime.getTime() - Date.now(),
+    jobId: idempotencyKey, // Use idempotency key as job ID
   })
 }
 
@@ -263,9 +461,14 @@ export const queueMeetingProcessing = async (meetingId: string, data: Partial<Me
   const queue = getMeetingQueue()
   if (!queue) return null
 
+  const idempotencyKey = `meeting_${meetingId}_${Date.now()}`
+
   return await queue.add('meeting-processing', {
     meetingId,
+    idempotencyKey,
     ...data,
+  }, {
+    jobId: idempotencyKey,
   })
 }
 
@@ -273,11 +476,16 @@ export const queueNotification = async (meetingId: string, type: 'brief' | 'remi
   const queue = getNotificationQueue()
   if (!queue) return null
 
+  const idempotencyKey = `notification_${meetingId}_${type}_${Date.now()}`
+
   return await queue.add('notification', {
     meetingId,
     type,
     recipients,
     content,
+    idempotencyKey,
+  }, {
+    jobId: idempotencyKey,
   })
 }
 

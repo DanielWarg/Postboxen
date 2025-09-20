@@ -8,6 +8,7 @@ import { regwatchRepository } from "@/lib/db/repositories/regwatch"
 import { RetentionCard } from "./components/retention-card"
 import { RegwatchCard } from "./components/regwatch-card"
 import { ConsentCard } from "./components/consent-card"
+import { QueueDashboardCard } from "./components/queue-dashboard-card"
 
 const dateFormatter = new Intl.DateTimeFormat("sv-SE", {
   day: "2-digit",
@@ -388,6 +389,8 @@ export default async function AgentsDashboardPage() {
         />
 
         <RegwatchCard />
+
+        <QueueDashboardCard />
       </section>
     </div>
   )
