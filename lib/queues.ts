@@ -177,6 +177,27 @@ export const processNotificationJob = async (job: Job<NotificationJob>) => {
   return { success: true, meetingId, type, recipients: recipients.length }
 }
 
+// Retention job processing
+export const processRetentionJob = async (job: Job<{ meetingId: string; config: any }>) => {
+  const { meetingId, config } = job.data
+  
+  try {
+    console.log(`Processing retention job for meeting ${meetingId}`)
+    
+    // Importera executeRetentionJob från retention.ts
+    const { executeRetentionJob } = await import('@/lib/agents/retention')
+    
+    const result = await executeRetentionJob(meetingId, config)
+    
+    console.log(`Retention completed for meeting ${meetingId}:`, result)
+    
+    return { success: true, meetingId, result }
+  } catch (error) {
+    console.error(`Retention job failed for meeting ${meetingId}:`, error)
+    throw error
+  }
+}
+
 // Queue management
 export const startWorkers = () => {
   const redis = getRedisClient()
@@ -213,6 +234,12 @@ export const startWorkers = () => {
   new Worker<NotificationJobData>('nudging-notifications', processNudgingNotificationJob, {
     connection: redis,
     concurrency: 5,
+  })
+
+  // Retention worker
+  new Worker<{ meetingId: string; config: any }>('meeting-processing', processRetentionJob, {
+    connection: redis,
+    concurrency: 1,
   })
 
   console.log("Job workers started")

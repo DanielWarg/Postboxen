@@ -7,6 +7,7 @@ import { meetingRepository } from "@/lib/db/repositories/meetings"
 import { regwatchRepository } from "@/lib/db/repositories/regwatch"
 import { RetentionCard } from "./components/retention-card"
 import { RegwatchCard } from "./components/regwatch-card"
+import { ConsentCard } from "./components/consent-card"
 
 const dateFormatter = new Intl.DateTimeFormat("sv-SE", {
   day: "2-digit",
@@ -262,7 +263,7 @@ export default async function AgentsDashboardPage() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 lg:grid-cols-5">
+      <section className="grid gap-4 lg:grid-cols-6">
         <Card className="border-border/60 bg-card/60">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -379,6 +380,11 @@ export default async function AgentsDashboardPage() {
         <RetentionCard
           userEmail="admin@postboxen.se"
           profile="juridik"
+        />
+
+        <ConsentCard
+          userEmail="admin@postboxen.se"
+          currentProfile="juridik"
         />
 
         <RegwatchCard />
