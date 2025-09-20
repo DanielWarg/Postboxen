@@ -1,5 +1,32 @@
 # Produktionsplan – Postboxen AI-kollega
 
+## Vision-audit & Status
+
+### Vision-pelare → Status
+- **Join & schemaläggning** (magisk inbjudan, 1-klick, always-on, magisk länk) → **Delvis**: join/1-klick finns i motorn; always-on/"magisk länk" kommer i Fas 5
+- **Transkript & recap med fallback** → **Klar** (orchestrator + fallback)
+- **Decision → Action** (Decision Cards + Planner/Jira/Trello + 48h nudge) → **Klar i backend**, ködrift & retrys landar i Fas 5
+- **Pre-brief / Post-brief** → **Klar i backend**; UI finns (brief-vy)
+- **Stakeholder-analys** → **Delvis**: motor klar, UI "Stakeholders" kvar i Frontend-expansion
+- **Regwatch** (EU/Sverige) + varningar → **Delvis**: regwatch-vy finns; jobbflöde/källor/alerts saknas
+- **Doc-copilot** (diff + källcitat) → **Saknas** i UI och diff-motor (planeras)
+- **Upphandlings-simulator** (A/B-krav, överkvalificering) → **Saknas** (kräver heuristik + UI)
+- **Coaching-metrik** (taltid/avbrott/tempo, aggregerad) → **Saknas** (engine + UI behövs)
+- **Compliance "på riktigt"** (samtyckescenter, PII-mask, consent receipts, retention, EU-databoende, "Radera allt") → **Delvis**: consent i DB, policy-UI och retention/radera-flöden saknas
+- **Global sök & historik** (möten ↔ beslut ↔ åtgärder ↔ källcitat) → **Saknas** (index + UI)
+- **Observability & kostnad** (OTel, Prometheus, Sentry, kostnadsrad/möte) → **Planerat** (Fas 4)
+- **Integrationsnav** (Slack/Teams-post, outbound webhooks/Zapier) → **Delvis**: webhook-status planeras; outbound webhooks/Zapier ej nämnda
+- **Modell-router & kostnadsvakt** (multi-LLM, budgettak, fallback) → **Saknas** (policy + routing)
+- **Enterprise-redo** (SSO/SAML/SCIM, marketplace-listningar, minsta scopes) → **Saknas** i planen
+
+### 6 viktigaste luckor att stänga
+1. **Compliance-paket v1**: Samtyckescenter i UI, "Radera allt"-knapp, retention-jobb (30/90/365), tydligt EU-databoende-val och exportprofil ("kundversion", DLP)
+2. **Regwatch-pipeline**: BullMQ-jobb + källkatalog (EU/SE RSS/HTML/PDF), normalisering, versionsdiff, alerts till möten/konton
+3. **Doc-copilot med diff**: Text-diff på paragrafnivå + källcitat (citations.ts) och "ersätt X → föreslå Y"-panel i mötes-/dokumentvyn
+4. **Coaching-metrik** (GDPR-safe): taltid/interrupt/tempo som aggregerad panel, inget individ-ansikte. Post-mötessammanställning + trend per team
+5. **Global sök**: index över möten/beslut/åtgärder/källcitat; fråga "vad beslutade vi om X i maj?" och få träff säkert
+6. **Enterprise-baseline**: SSO/SAML, SCIM (provisionering), Teams/Zoom marketplace-ansökan, minimi-scopes-policy, outbound webhooks/Zapier
+
 ## Översikt (obligatoriska komponenter)
 1. **Frontend & UX**
    - Dashboard (beslut, briefer, stakeholders, regwatch)
@@ -78,6 +105,10 @@
 3. Skapa UI för regwatch, procurement-simulator och doc-copilot.
 4. Lägg till settings för consent, tokens, moduler.
 5. Leverera "Magisk inbjudan" (adress + instruktion) och "1‑klick i kalendern"-toggle inkl. live-status.
+
+**Nya tickets för Fas 3:**
+- **Ticket A: Retention & Radera allt** – BullMQ-svep för retention per samtyckesprofil, UI-knapp som triggar rensning + audit-logg + export av consent receipt. Klar-kriterier: raderar artefakter i Postgres/objektlager, loggar hash, visar kvitto i audit-vyn.
+- **Ticket B: Regwatch v1** – nattligt jobb som hämtar 3–5 källor, normaliserar, versionerar och skapar alerts i regwatch-vyn + ping i post-brief om relevant. Klar-kriterier: minst 1 notifiering/vecka i staging med käll-URL och datumdiff.
 
 ### Fas 4 – Observability & drift (vecka 7–8)
 1. Inför OpenTelemetry (trace) och Prometheus (metrics).

@@ -64,6 +64,8 @@
 1. **Vecka 1–2 – Säkerhetsgrund**: OAuth2/JWT, Zod-validering på alla endpoints, CORS/rate limiting. ✅
 2. **Vecka 3–4 – Databaser**: Inför Postgres (möten, stakeholders, audit), Redis cache och backup-plan. ✅ **KLART!**
 3. **Vecka 5–6 – Frontend**: Dashboard med Decision Cards, Briefs, Regwatch och Consent-hantering + UI för "magisk inbjudan" & 1‑klick-toggles.
+   - **Ticket A: Retention & Radera allt** – BullMQ-svep för retention per samtyckesprofil, UI-knapp som triggar rensning + audit-logg + export av consent receipt.
+   - **Ticket B: Regwatch v1** – nattligt jobb som hämtar 3–5 källor, normaliserar, versionerar och skapar alerts i regwatch-vyn + ping i post-brief om relevant.
 4. **Vecka 7–8 – Observability**: OpenTelemetry, Prometheus/Grafana, Sentry, kostnadsmetrik per möte.
 5. **Vecka 9–10 – Robusthet/Test**: Jobbkedja för nudging (BullMQ/Cloud Tasks), komplett testsuite, CI/CD samt Teams/Zoom slash-kommandon, "Alltid-på" etiketter och signerad magisk länk som fallback.
 
