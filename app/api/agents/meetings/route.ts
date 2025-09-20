@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 
 import { ensureAgentBootstrap } from "@/lib/agents/bootstrap"
 import { meetingRepository } from "@/lib/db/repositories/meetings"
@@ -8,6 +9,14 @@ import { ApiError } from "@/lib/http/errors"
 import { createLogger } from "@/lib/observability/logger"
 import { agentMetrics } from "@/lib/observability/metrics"
 import { reportApiError } from "@/lib/observability/sentry"
+import { optimizedMeetingQueries, performanceHelpers } from "@/lib/db/optimized-queries"
+import { cacheManager } from "@/lib/cache/manager"
+
+const GetMeetingsSchema = z.object({
+  page: z.string().optional().default("1"),
+  limit: z.string().optional().default("20"),
+  organizerEmail: z.string().email().optional(),
+})
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -20,14 +29,67 @@ export async function GET(request: NextRequest) {
     logger.api.request('GET', '/api/agents/meetings')
     ensureAgentBootstrap()
     
-    const meetings = await meetingRepository.getMeetingOverview()
+    // Parse query parameters
+    const { searchParams } = new URL(request.url)
+    const query = Object.fromEntries(searchParams.entries())
+    const { page, limit, organizerEmail } = GetMeetingsSchema.parse(query)
+
+    const pageNum = parseInt(page)
+    const limitNum = parseInt(limit)
+
+    // Use cached version if available
+    const cacheKey = `meetings:page:${pageNum}:limit:${limitNum}:organizer:${organizerEmail || 'all'}`
+    const cached = await cacheManager.get(cacheKey)
+    
+    if (cached) {
+      const duration = (Date.now() - startTime) / 1000
+      logger.api.response('GET', '/api/agents/meetings', 200, duration)
+      agentMetrics.apiRequestsTotal('GET', '/api/agents/meetings', 200)
+      agentMetrics.apiRequestDuration('GET', '/api/agents/meetings', duration)
+      logger.info('Meetings fetched from cache', { page: pageNum, limit: limitNum })
+      return NextResponse.json(cached)
+    }
+
+    // Fetch from database with optimized query
+    const meetings = await performanceHelpers.trackQuery(
+      'getMeetingsPaginated',
+      () => optimizedMeetingQueries.getMeetingsPaginated(pageNum, limitNum, organizerEmail)
+    )
+
+    // Get total count for pagination
+    const totalCount = await performanceHelpers.trackQuery(
+      'getMeetingsCount',
+      () => optimizedMeetingQueries.getDashboardStats(organizerEmail)
+    )
+
+    const result = {
+      meetings,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount.totalMeetings,
+        totalPages: Math.ceil(totalCount.totalMeetings / limitNum),
+        hasNext: pageNum * limitNum < totalCount.totalMeetings,
+        hasPrev: pageNum > 1,
+      },
+    }
+
+    // Cache result for 5 minutes
+    await cacheManager.set(cacheKey, result, 300)
     
     const duration = (Date.now() - startTime) / 1000
     logger.api.response('GET', '/api/agents/meetings', 200, duration)
     agentMetrics.apiRequestsTotal('GET', '/api/agents/meetings', 200)
     agentMetrics.apiRequestDuration('GET', '/api/agents/meetings', duration)
     
-    return NextResponse.json({ meetings })
+    logger.info('Meetings fetched from database', { 
+      page: pageNum, 
+      limit: limitNum, 
+      count: meetings.length,
+      organizerEmail: organizerEmail || 'all'
+    })
+    
+    return NextResponse.json(result)
   } catch (error) {
     const duration = (Date.now() - startTime) / 1000
     
