@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/sheet";
 import { MonitoringDashboard } from "./components/monitoring-dashboard";
 import { SlashCommandsCard } from "./components/slash-commands-card";
+import { MagicInviteCard } from "./components/magic-invite-card";
 
 // ------------------------------------------------------------
 // Minimal, lugn dashboard i ljust tema med "Spotlight"-ytor.
@@ -173,7 +174,8 @@ type SpotlightKey =
   | "compliance"
   | "observability"
   | "monitoring"
-  | "slash-commands";
+  | "slash-commands"
+  | "magic-invite";
 
 interface SpotlightDef {
   key: SpotlightKey;
@@ -267,12 +269,21 @@ const SPOTLIGHTS: Record<SpotlightKey, SpotlightDef> = {
     help: "Power user-funktioner för direkt åtkomst till AI-kollega i mötesplattformarna.",
     Component: SlashCommandsPanel,
   },
+  "magic-invite": {
+    key: "magic-invite",
+    title: "Magisk inbjudan",
+    badge: "onboarding",
+    icon: Sparkles,
+    description: "Skapa unika inbjudningar för AI-kollega som användare kan dela.",
+    help: "Onboarding-funktionalitet för att enkelt bjuda in AI-kollegan till möten.",
+    Component: MagicInvitePanel,
+  },
 };
 
 function SpotlightSelect({ value, onChange }: { value: SpotlightKey; onChange: (k: SpotlightKey) => void }) {
   return (
     <Tabs value={value} onValueChange={(v) => onChange(v as SpotlightKey)} className="w-full md:w-auto">
-      <TabsList className="grid grid-cols-4 md:grid-cols-9 w-full">
+      <TabsList className="grid grid-cols-4 md:grid-cols-10 w-full">
         {Object.values(SPOTLIGHTS).map((s) => (
           <TabsTrigger key={s.key} value={s.key} className="text-xs md:text-sm">
             {s.title}
@@ -513,6 +524,14 @@ function SlashCommandsPanel({ meetingId, compact }: { meetingId: string; compact
   return (
     <div className="space-y-4">
       <SlashCommandsCard />
+    </div>
+  );
+}
+
+function MagicInvitePanel({ meetingId, compact }: { meetingId: string; compact: boolean }) {
+  return (
+    <div className="space-y-4">
+      <MagicInviteCard />
     </div>
   );
 }
