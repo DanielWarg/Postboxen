@@ -650,12 +650,18 @@ export const meetingRepository = {
     return records.map(mapBriefFromRecord)
   },
 
-  async getRecentActionItems(limit = 5) {
-    const records = await prisma.actionItem.findMany({
-      include: { meeting: { select: { title: true } } },
-      orderBy: { createdAt: "desc" },
-      take: limit,
+  async findByOrganizer(organizerEmail: string) {
+    return prisma.meeting.findMany({
+      where: { organizerEmail },
+      include: {
+        summary: true,
+        decisions: true,
+        actionItems: true,
+        briefs: true,
+        stakeholders: true,
+        consent: true,
+      },
+      orderBy: { startTime: "desc" },
     })
-    return records.map(mapActionItemFromRecord)
   },
 }

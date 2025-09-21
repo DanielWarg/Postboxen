@@ -17,6 +17,7 @@ import {
   NotebookPen,
   ShieldCheck,
   Sparkles,
+  Terminal,
   Timer,
   Trash2,
   Users,
@@ -51,6 +52,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { MonitoringDashboard } from "./components/monitoring-dashboard";
+import { SlashCommandsCard } from "./components/slash-commands-card";
 
 // ------------------------------------------------------------
 // Minimal, lugn dashboard i ljust tema med "Spotlight"-ytor.
@@ -170,7 +172,8 @@ type SpotlightKey =
   | "regwatch"
   | "compliance"
   | "observability"
-  | "monitoring";
+  | "monitoring"
+  | "slash-commands";
 
 interface SpotlightDef {
   key: SpotlightKey;
@@ -255,12 +258,21 @@ const SPOTLIGHTS: Record<SpotlightKey, SpotlightDef> = {
     help: "Övervaka systemhälsa, resursanvändning, köer och affärsmetrics i realtid.",
     Component: MonitoringPanel,
   },
+  "slash-commands": {
+    key: "slash-commands",
+    title: "Slash-kommandon",
+    badge: "power user",
+    icon: Terminal,
+    description: "Snabbkommandon för Teams, Zoom, Google Meet och Webex.",
+    help: "Power user-funktioner för direkt åtkomst till AI-kollega i mötesplattformarna.",
+    Component: SlashCommandsPanel,
+  },
 };
 
 function SpotlightSelect({ value, onChange }: { value: SpotlightKey; onChange: (k: SpotlightKey) => void }) {
   return (
     <Tabs value={value} onValueChange={(v) => onChange(v as SpotlightKey)} className="w-full md:w-auto">
-      <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
+      <TabsList className="grid grid-cols-4 md:grid-cols-9 w-full">
         {Object.values(SPOTLIGHTS).map((s) => (
           <TabsTrigger key={s.key} value={s.key} className="text-xs md:text-sm">
             {s.title}
@@ -493,6 +505,14 @@ function MonitoringPanel({ meetingId, compact }: { meetingId: string; compact: b
   return (
     <div className="space-y-4">
       <MonitoringDashboard />
+    </div>
+  );
+}
+
+function SlashCommandsPanel({ meetingId, compact }: { meetingId: string; compact: boolean }) {
+  return (
+    <div className="space-y-4">
+      <SlashCommandsCard />
     </div>
   );
 }
