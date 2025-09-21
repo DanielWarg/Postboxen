@@ -7,38 +7,39 @@ test.describe('Dashboard E2E Tests', () => {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
     
-    // Check that the main dashboard elements are present (use more specific selector)
-    await expect(page.locator('h1').first()).toContainText('AI-kollega');
+    // Check that the main dashboard elements are present using stable selectors
+    await expect(page.getByTestId('app-title')).toBeVisible();
+    await expect(page.getByTestId('app-title')).toContainText('AI-kollega');
     
     // Check that spotlight tabs are present
-    await expect(page.locator('[role="tab"]').first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Möten' })).toBeVisible();
     
     // Check that KPI cards are visible
-    await expect(page.locator('text=Möten')).toBeVisible();
-    await expect(page.locator('text=Briefs')).toBeVisible();
+    await expect(page.getByText('Möten')).toBeVisible();
+    await expect(page.getByText('Briefs')).toBeVisible();
   });
 
   test('should navigate between spotlight tabs', async ({ page }) => {
     await page.goto('/agents');
     await page.waitForLoadState('networkidle');
     
-    // Click on different tabs
-    await page.click('text=Briefs');
-    await expect(page.locator('text=För-brief 30 min före och post-brief efter mötet.')).toBeVisible();
+    // Click on different tabs using stable selectors
+    await page.getByRole('tab', { name: 'Briefs' }).click();
+    await expect(page.getByText('För-brief 30 min före och post-brief efter mötet.')).toBeVisible();
     
-    await page.click('text=Regwatch');
-    await expect(page.locator('text=Regeländringar')).toBeVisible();
+    await page.getByRole('tab', { name: 'Regwatch' }).click();
+    await expect(page.getByText('Regeländringar')).toBeVisible();
     
-    await page.click('text=Möten');
-    await expect(page.locator('text=Mötesöversikt')).toBeVisible();
+    await page.getByRole('tab', { name: 'Möten' }).click();
+    await expect(page.getByText('Mötesöversikt')).toBeVisible();
   });
 
   test('should toggle compact mode', async ({ page }) => {
     await page.goto('/agents');
     await page.waitForLoadState('networkidle');
     
-    // Find and click the compact mode toggle (use more specific selector)
-    const compactToggle = page.locator('label[for="compact-mode"] + button');
+    // Find and click the compact mode toggle using stable selector
+    const compactToggle = page.getByTestId('compact-switch');
     await compactToggle.click();
     
     // Check that compact mode is toggled
@@ -51,7 +52,21 @@ test.describe('Dashboard E2E Tests', () => {
     await page.waitForLoadState('networkidle');
     
     // Check that the page loads and main elements are visible on mobile
-    await expect(page.locator('h1').first()).toContainText('AI-kollega');
-    await expect(page.locator('[role="tab"]').first()).toBeVisible();
+    await expect(page.getByTestId('app-title')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Möten' })).toBeVisible();
+  });
+
+  test('should show observability metrics', async ({ page }) => {
+    await page.goto('/agents');
+    await page.waitForLoadState('networkidle');
+    
+    // Click on Observability tab
+    await page.getByRole('tab', { name: 'Observability' }).click();
+    
+    // Check that observability metrics are visible
+    await expect(page.getByText(/Mål recap\s*<\s*90s: ✅/)).toBeVisible();
+    await expect(page.getByText(/Mål nudge\s*<\s*48h: ✅/)).toBeVisible();
+    await expect(page.getByText(/Error rate: 0\.02%/)).toBeVisible();
+    await expect(page.getByText(/Uptime: 99\.9%/)).toBeVisible();
   });
 });

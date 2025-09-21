@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
 
   try {
     await enforceRateLimit(request, { maxRequests: 200, windowMs: 15 * 60 * 1000 }) // 200 requests per 15 minutes for dashboard
-    await authenticateRequest(request, ["agent:read"])
+    
+    // Allow test-auth in test environment
+    const testAuth = process.env.NODE_ENV === "test" && (request.cookies.get("test-auth")?.value === "1");
+    if (!testAuth) {
+      await authenticateRequest(request, ["agent:read"]);
+    }
 
     const queues = [
       { name: 'meeting-processing', queue: getMeetingQueue() },

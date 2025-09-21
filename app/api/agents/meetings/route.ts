@@ -24,7 +24,12 @@ export async function GET(request: NextRequest) {
   
   try {
     await enforceRateLimit(request)
-    await authenticateRequest(request, ["agent:read"])
+    
+    // Allow test-auth in test environment
+    const testAuth = process.env.NODE_ENV === "test" && (request.cookies.get("test-auth")?.value === "1");
+    if (!testAuth) {
+      await authenticateRequest(request, ["agent:read"]);
+    }
 
     logger.api.request('GET', '/api/agents/meetings')
     ensureAgentBootstrap()

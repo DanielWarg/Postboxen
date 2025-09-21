@@ -332,7 +332,7 @@ export default function AgentsPage() {
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">AI-kollega</h1>
+            <h1 data-testid="app-title" className="text-2xl font-bold text-slate-900">AI-kollega</h1>
             <p className="text-slate-600">Din intelligenta mötesassistent</p>
           </div>
           <div className="flex items-center gap-4">
@@ -340,6 +340,7 @@ export default function AgentsPage() {
               <Label htmlFor="compact-mode" className="text-sm">Kompakt läge</Label>
               <Switch
                 id="compact-mode"
+                data-testid="compact-switch"
                 checked={compact}
                 onCheckedChange={handleCompactToggle}
               />
@@ -361,7 +362,7 @@ export default function AgentsPage() {
         <Tabs value={spotlight} onValueChange={handleSpotlightChange}>
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-11">
             {Object.entries(SPOTLIGHTS).map(([key, def]) => (
-              <TabsTrigger key={key} value={key} className="text-xs">
+              <TabsTrigger key={key} value={key} data-testid={`tab-${key}`} className="text-xs">
                 <def.icon className="h-4 w-4 mr-1" />
                 {def.title}
               </TabsTrigger>
