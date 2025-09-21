@@ -1,0 +1,202 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - link "PB Postboxen Agentpanelen" [ref=e9] [cursor=pointer]:
+        - /url: /agents
+        - generic [ref=e10] [cursor=pointer]: PB
+        - generic [ref=e11] [cursor=pointer]:
+          - generic [ref=e12] [cursor=pointer]: Postboxen
+          - generic [ref=e13] [cursor=pointer]: Agentpanelen
+      - generic [ref=e15]:
+        - generic [ref=e16]: Navigering
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link "Översikt Status för möten, beslut och åtgärder." [ref=e20] [cursor=pointer]:
+              - /url: /agents
+              - img [ref=e21] [cursor=pointer]
+              - generic [ref=e26] [cursor=pointer]:
+                - generic [ref=e27] [cursor=pointer]: Översikt
+                - generic [ref=e28] [cursor=pointer]: Status för möten, beslut och åtgärder.
+          - listitem [ref=e29]:
+            - link "Briefs Pre- och post-briefer från Briefing Engine." [ref=e30] [cursor=pointer]:
+              - /url: /agents/briefs
+              - img [ref=e31] [cursor=pointer]
+              - generic [ref=e34] [cursor=pointer]:
+                - generic [ref=e35] [cursor=pointer]: Briefs
+                - generic [ref=e36] [cursor=pointer]: Pre- och post-briefer från Briefing Engine.
+          - listitem [ref=e37]:
+            - link "Decision cards Aktuella beslutsunderlag och rekommendationer." [ref=e38] [cursor=pointer]:
+              - /url: /agents/decision-cards
+              - img [ref=e39] [cursor=pointer]
+              - generic [ref=e42] [cursor=pointer]:
+                - generic [ref=e43] [cursor=pointer]: Decision cards
+                - generic [ref=e44] [cursor=pointer]: Aktuella beslutsunderlag och rekommendationer.
+          - listitem [ref=e45]:
+            - link "Stakeholders Kartan över intressenter och påverkan." [ref=e46] [cursor=pointer]:
+              - /url: /agents/stakeholders
+              - img [ref=e47] [cursor=pointer]
+              - generic [ref=e52] [cursor=pointer]:
+                - generic [ref=e53] [cursor=pointer]: Stakeholders
+                - generic [ref=e54] [cursor=pointer]: Kartan över intressenter och påverkan.
+          - listitem [ref=e55]:
+            - link "Regwatch Senaste ändringar i regelverk och policy." [ref=e56] [cursor=pointer]:
+              - /url: /agents/regwatch
+              - img [ref=e57] [cursor=pointer]
+              - generic [ref=e60] [cursor=pointer]:
+                - generic [ref=e61] [cursor=pointer]: Regwatch
+                - generic [ref=e62] [cursor=pointer]: Senaste ändringar i regelverk och policy.
+          - listitem [ref=e63]:
+            - link "Moduler Aktivera agentprofiler och integrationsmoduler." [ref=e64] [cursor=pointer]:
+              - /url: /agents/modules
+              - img [ref=e65] [cursor=pointer]
+              - generic [ref=e67] [cursor=pointer]:
+                - generic [ref=e68] [cursor=pointer]: Moduler
+                - generic [ref=e69] [cursor=pointer]: Aktivera agentprofiler och integrationsmoduler.
+      - generic [ref=e71]:
+        - generic [ref=e72]: GA
+        - generic [ref=e73]:
+          - generic [ref=e74]: General availability
+          - generic [ref=e75]: Pilot
+      - button "Toggle Sidebar" [ref=e76]
+    - main [ref=e77]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - button "Toggle Sidebar" [ref=e80] [cursor=pointer]:
+            - img
+            - generic [ref=e81] [cursor=pointer]: Toggle Sidebar
+          - generic [ref=e82]:
+            - generic [ref=e83]: Agentpanelen
+            - heading "Överblick och styrning" [level=1] [ref=e84]
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - generic [ref=e87]: Miljö
+            - generic [ref=e88]: Pilot
+          - generic [ref=e89]:
+            - generic [ref=e90]: Senaste uppdatering
+            - generic [ref=e91]: för 3 min sedan
+          - searchbox "Sök möte, beslutsunderlag eller deltagare" [ref=e92]
+          - button "Exportera rapport" [ref=e93] [cursor=pointer]
+          - button "Schemalägg möte" [ref=e94] [cursor=pointer]
+      - main [ref=e95]:
+        - main [ref=e96]:
+          - generic [ref=e98]:
+            - generic [ref=e99]:
+              - heading "AI-kollega" [level=1] [ref=e100]
+              - paragraph [ref=e101]: Din intelligenta mötesassistent
+            - generic [ref=e102]:
+              - generic [ref=e103]:
+                - generic [ref=e104]: Kompakt läge
+                - switch "Kompakt läge" [checked] [ref=e105] [cursor=pointer]
+              - button "⌘K" [ref=e106] [cursor=pointer]:
+                - img
+                - text: ⌘K
+          - tablist [ref=e109]:
+            - tab "Möten" [selected] [ref=e110] [cursor=pointer]:
+              - img [ref=e111] [cursor=pointer]
+              - text: Möten
+            - tab "Beslut" [ref=e113] [cursor=pointer]:
+              - img [ref=e114] [cursor=pointer]
+              - text: Beslut
+            - tab "Åtgärder" [ref=e117] [cursor=pointer]:
+              - img [ref=e118] [cursor=pointer]
+              - text: Åtgärder
+            - tab "Briefs" [ref=e121] [cursor=pointer]:
+              - img [ref=e122] [cursor=pointer]
+              - text: Briefs
+            - tab "Regwatch" [ref=e125] [cursor=pointer]:
+              - img
+              - text: Regwatch
+            - tab "Compliance" [ref=e128] [cursor=pointer]:
+              - img
+              - text: Compliance
+            - tab "Observability" [ref=e131] [cursor=pointer]:
+              - img
+              - text: Observability
+            - tab "Monitoring" [ref=e134] [cursor=pointer]:
+              - img
+              - text: Monitoring
+            - tab "Slash Commands" [ref=e137] [cursor=pointer]:
+              - img
+              - text: Slash Commands
+            - tab "Magic Invite" [ref=e139] [cursor=pointer]:
+              - img
+              - text: Magic Invite
+            - tab "Consent" [ref=e141] [cursor=pointer]:
+              - img [ref=e142] [cursor=pointer]
+              - text: Consent
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - generic [ref=e149]:
+                  - generic [ref=e150]: Möten
+                  - img [ref=e151]
+                - generic [ref=e153]:
+                  - generic [ref=e154]: "12"
+                  - paragraph [ref=e155]: +2 denna vecka
+              - generic [ref=e156]:
+                - generic [ref=e157]:
+                  - generic [ref=e158]: Beslut
+                  - img [ref=e159]
+                - generic [ref=e162]:
+                  - generic [ref=e163]: "8"
+                  - paragraph [ref=e164]: +1 idag
+              - generic [ref=e165]:
+                - generic [ref=e166]:
+                  - generic [ref=e167]: Åtgärder
+                  - img [ref=e168]
+                - generic [ref=e171]:
+                  - generic [ref=e172]: "15"
+                  - paragraph [ref=e173]: 3 öppna
+            - generic [ref=e174]:
+              - generic [ref=e175]:
+                - img [ref=e176]
+                - heading "Spotlight" [level=2] [ref=e178]
+              - generic [ref=e179]:
+                - generic [ref=e180]:
+                  - generic [ref=e181]: Mötesöversikt
+                  - generic [ref=e182]: Senaste möten och kommande
+                - paragraph [ref=e184]: Inga möten hittades
+            - generic [ref=e185]:
+              - generic [ref=e186]:
+                - generic [ref=e187]:
+                  - generic [ref=e188]: Snabbåtgärder
+                  - generic [ref=e189]: Det viktigaste – max tre klick
+                - generic [ref=e190]:
+                  - button "Bjud in Kollegan" [ref=e191] [cursor=pointer]:
+                    - img
+                    - text: Bjud in Kollegan
+                  - button "Nudga öppna åtgärder" [ref=e192] [cursor=pointer]:
+                    - img
+                    - text: Nudga öppna åtgärder
+                  - button "Exportera post-brief" [ref=e193] [cursor=pointer]:
+                    - img
+                    - text: Exportera post-brief
+              - generic [ref=e194]:
+                - generic [ref=e195]:
+                  - generic [ref=e196]: Status
+                  - generic [ref=e197]: Lugnt och överskådligt
+                - generic [ref=e198]:
+                  - generic [ref=e199]: "Agent: Online"
+                  - generic [ref=e200]: "Köjobb: 2 väntar • 6 kör"
+                  - generic [ref=e201]: "Senaste recap: 12:41"
+              - generic [ref=e202]:
+                - generic [ref=e203]:
+                  - generic [ref=e204]: Notiser
+                  - generic [ref=e205]: Endast viktiga händelser
+                - generic [ref=e206]:
+                  - generic [ref=e207]:
+                    - img [ref=e208]
+                    - generic [ref=e212]: Post-brief skickad till kund
+                    - generic [ref=e213]: nyss
+                  - generic [ref=e214]:
+                    - img [ref=e215]
+                    - generic [ref=e219]: 2 åtgärder nudgade
+                    - generic [ref=e220]: för 1 h sedan
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e226] [cursor=pointer]:
+    - img [ref=e227] [cursor=pointer]
+  - alert [ref=e230]
+```
