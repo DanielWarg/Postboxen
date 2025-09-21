@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postboxen-prod-config
+  namespace: postboxen-prod
+data:
+  JWT_ISSUER: "postboxen.com"
+  JWT_AUDIENCE: "postboxen-users"
+  ALLOWED_ORIGINS: "https://postboxen.com,https://app.postboxen.com"
+  AI_ASSISTANT_API_URL: "https://api.openai.com/v1"
+  LOG_LEVEL: "warn"
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+  PORT: "3000"

@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # Production PostgreSQL
+  postgres-prod:
+    image: postgres:16-alpine
+    container_name: postboxen-postgres-prod
+    environment:
+      POSTGRES_DB: postboxen_prod
+      POSTGRES_USER: postboxen_prod
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - postboxen-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postboxen_prod -d postboxen_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+
+  # Production Redis
+  redis-prod:
+    image: redis:7-alpine
+    container_name: postboxen-redis-prod
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_prod_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - postboxen-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+
+  # Production Application
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: postboxen-app-prod
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postboxen_prod:${POSTGRES_PASSWORD}@postgres-prod:5432/postboxen_prod?sslmode=prefer
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-prod:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      AI_ASSISTANT_API_URL: ${AI_ASSISTANT_API_URL}
+      AI_ASSISTANT_API_KEY: ${AI_ASSISTANT_API_KEY}
+      AI_ASSISTANT_WEBHOOK_SECRET: ${AI_ASSISTANT_WEBHOOK_SECRET}
+      SENTRY_DSN: ${SENTRY_DSN}
+      SENTRY_RELEASE: ${SENTRY_RELEASE}
+      LOG_LEVEL: warn
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks:
+      - postboxen-prod
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+      redis-prod:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  # Nginx Reverse Proxy
+  nginx-prod:
+    image: nginx:alpine
+    container_name: postboxen-nginx-prod
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - postboxen-prod
+    depends_on:
+      - app-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+
+networks:
+  postboxen-prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

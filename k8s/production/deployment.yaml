@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postboxen-prod
+  namespace: postboxen-prod
+  labels:
+    app: postboxen-prod
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postboxen-prod
+  template:
+    metadata:
+      labels:
+        app: postboxen-prod
+        environment: production
+    spec:
+      containers:
+      - name: postboxen
+        image: danielwarg/postboxen:production-latest
+        ports:
+        - containerPort: 3000
+          name: http
+        envFrom:
+        - secretRef:
+            name: postboxen-prod-secrets
+        - configMapRef:
+            name: postboxen-prod-config
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postboxen-prod-service
+  namespace: postboxen-prod
+  labels:
+    app: postboxen-prod
+spec:
+  selector:
+    app: postboxen-prod
+  ports:
+  - port: 80
+    targetPort: 3000
+    name: http
+  type: ClusterIP

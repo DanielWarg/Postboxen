@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postboxen-prod-monitor
+  namespace: postboxen-prod
+  labels:
+    app: postboxen-prod
+spec:
+  selector:
+    matchLabels:
+      app: postboxen-prod
+  endpoints:
+  - port: http
+    path: /api/metrics
+    interval: 30s
+    scrapeTimeout: 10s
