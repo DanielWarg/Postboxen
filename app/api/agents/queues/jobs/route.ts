@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const logger = createLogger(correlationId)
 
   try {
-    await enforceRateLimit(request, { maxRequests: 30 })
+    await enforceRateLimit(request, { maxRequests: 200, windowMs: 15 * 60 * 1000 }) // 200 requests per 15 minutes for dashboard
     await authenticateRequest(request, ["agent:read"])
 
     const { searchParams } = new URL(request.url)

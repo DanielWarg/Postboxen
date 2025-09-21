@@ -60,6 +60,7 @@ export function QueueDashboardCard() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [retryDelay, setRetryDelay] = useState(30000) // Start with 30 seconds
 
   const fetchQueueData = async () => {
     try {
@@ -71,6 +72,21 @@ export function QueueDashboardCard() {
         fetch("/api/agents/queues/jobs"),
         fetch("/api/agents/queues/dead-letter"),
       ])
+
+      // Check for rate limit errors
+      const hasRateLimitError = [statsResponse, jobsResponse, dlqResponse].some(
+        response => response.status === 429
+      )
+
+      if (hasRateLimitError) {
+        // Exponential backoff: double the delay, max 5 minutes
+        setRetryDelay(prev => Math.min(prev * 2, 300000))
+        console.warn("Rate limit exceeded, increasing retry delay to", retryDelay * 2, "ms")
+        return
+      }
+
+      // Reset delay on successful request
+      setRetryDelay(30000)
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
@@ -134,13 +150,13 @@ export function QueueDashboardCard() {
 
     let interval: NodeJS.Timeout | null = null
     if (autoRefresh) {
-      interval = setInterval(fetchQueueData, 10000) // Refresh every 10 seconds
+      interval = setInterval(fetchQueueData, retryDelay) // Use dynamic retry delay
     }
 
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [autoRefresh])
+  }, [autoRefresh, retryDelay])
 
   const getStatusIcon = (status: QueueJob["status"]) => {
     switch (status) {
