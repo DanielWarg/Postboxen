@@ -1,0 +1,327 @@
+{
+  "dashboard": {
+    "id": "epic-90-day-plan",
+    "title": "Epic 90-Day Plan: MVP → AWESOME",
+    "tags": ["postboxen", "epic", "kpi"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": "kpi-overview",
+        "title": "🎯 Hårda mål (3 kritiska KPI:er)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(postboxen_meeting_time_saved_total[1h]) / increase(postboxen_meetings_total[1h])",
+            "legendFormat": "Sparad tid/möte (min)",
+            "unit": "min"
+          },
+          {
+            "expr": "increase(postboxen_actions_completed_48h_total[1h]) / increase(postboxen_actions_total[1h]) * 100",
+            "legendFormat": "Åtgärder klara inom 48h (%)",
+            "unit": "percent"
+          },
+          {
+            "expr": "increase(postboxen_citations_total[1h]) / increase(postboxen_suggestions_total[1h]) * 100",
+            "legendFormat": "Källciterat (%)",
+            "unit": "percent"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 25,
+            "color": "green"
+          },
+          {
+            "value": 70,
+            "color": "green"
+          },
+          {
+            "value": 100,
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "id": "decision-close-card",
+        "title": "📋 PR #1: Decision-Close Card",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_decision_close_shown_total[5m])",
+            "legendFormat": "Decision Close Cards visade"
+          },
+          {
+            "expr": "rate(postboxen_decision_close_submitted_total[5m])",
+            "legendFormat": "Decision Close Cards submitade"
+          },
+          {
+            "expr": "rate(postboxen_task_create_ok_total[5m])",
+            "legendFormat": "Tasks skapade (OK)"
+          },
+          {
+            "expr": "rate(postboxen_task_create_fail_total[5m])",
+            "legendFormat": "Tasks skapade (FAIL)"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events per sekund",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "doc-copilot-v1",
+        "title": "📝 PR #2: Doc-Copilot v1",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_doccopilot_open_total[5m])",
+            "legendFormat": "Doc-Copilot öppningar"
+          },
+          {
+            "expr": "rate(postboxen_suggestion_rendered_total[5m])",
+            "legendFormat": "Förslag renderade"
+          },
+          {
+            "expr": "rate(postboxen_suggestion_accepted_total[5m])",
+            "legendFormat": "Förslag accepterade"
+          },
+          {
+            "expr": "rate(postboxen_suggestion_rejected_total[5m])",
+            "legendFormat": "Förslag avvisade"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events per sekund",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "regwatch-push",
+        "title": "📰 PR #3: Regwatch Push",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_regwatch_candidate_total[5m])",
+            "legendFormat": "Regwatch kandidater"
+          },
+          {
+            "expr": "rate(postboxen_regwatch_relevant_total[5m])",
+            "legendFormat": "Relevanta notiser"
+          },
+          {
+            "expr": "rate(postboxen_regwatch_postbrief_shown_total[5m])",
+            "legendFormat": "Post-brief notiser"
+          },
+          {
+            "expr": "rate(postboxen_regwatch_ctr_total[5m])",
+            "legendFormat": "CTR på källlänk"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events per sekund",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "model-router",
+        "title": "🔄 PR #4: Model Router",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_router_decision_total[5m])",
+            "legendFormat": "Router beslut"
+          },
+          {
+            "expr": "rate(postboxen_budget_hit_total[5m])",
+            "legendFormat": "Budget träffar"
+          },
+          {
+            "expr": "rate(postboxen_downgrade_applied_total[5m])",
+            "legendFormat": "Downgrades tillämpade"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(postboxen_router_latency_bucket[5m]))",
+            "legendFormat": "Router latens p95"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events per sekund / Latens (ms)",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "degrade-mode",
+        "title": "🛡️ PR #5: Degrade Mode",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_join_attempt_total[5m])",
+            "legendFormat": "Join försök"
+          },
+          {
+            "expr": "rate(postboxen_join_fail_reason_total[5m])",
+            "legendFormat": "Join fel"
+          },
+          {
+            "expr": "rate(postboxen_degrade_mode_on_total[5m])",
+            "legendFormat": "Degrade mode aktiverat"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(postboxen_time_to_after_recap_bucket[5m]))",
+            "legendFormat": "TTA p95 (ms)"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events per sekund / Tid (ms)",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "cost-tracking",
+        "title": "💰 Kostnad per möte",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_meeting_cost_total[1h])",
+            "legendFormat": "Kostnad per möte (SEK)"
+          },
+          {
+            "expr": "rate(postboxen_tokens_used_total[1h])",
+            "legendFormat": "Tokens per möte"
+          },
+          {
+            "expr": "rate(postboxen_budget_remaining_total[1h])",
+            "legendFormat": "Budget kvar (SEK)"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Kostnad (SEK) / Tokens",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "error-rates",
+        "title": "🚨 Error Rates",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_errors_total[5m]) / rate(postboxen_requests_total[5m]) * 100",
+            "legendFormat": "Error rate (%)"
+          },
+          {
+            "expr": "rate(postboxen_decision_close_errors_total[5m])",
+            "legendFormat": "Decision Close fel"
+          },
+          {
+            "expr": "rate(postboxen_doc_copilot_errors_total[5m])",
+            "legendFormat": "Doc-Copilot fel"
+          },
+          {
+            "expr": "rate(postboxen_regwatch_errors_total[5m])",
+            "legendFormat": "Regwatch fel"
+          },
+          {
+            "expr": "rate(postboxen_router_errors_total[5m])",
+            "legendFormat": "Router fel"
+          },
+          {
+            "expr": "rate(postboxen_degrade_errors_total[5m])",
+            "legendFormat": "Degrade fel"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Error rate (%) / Events per sekund",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "feature-adoption",
+        "title": "📈 Feature Adoption",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postboxen_decision_close_adoption_total[1h])",
+            "legendFormat": "Decision Close adoption"
+          },
+          {
+            "expr": "rate(postboxen_doc_copilot_adoption_total[1h])",
+            "legendFormat": "Doc-Copilot adoption"
+          },
+          {
+            "expr": "rate(postboxen_regwatch_adoption_total[1h])",
+            "legendFormat": "Regwatch adoption"
+          },
+          {
+            "expr": "rate(postboxen_model_router_adoption_total[1h])",
+            "legendFormat": "Model Router adoption"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Adoption rate",
+            "min": 0,
+            "max": 100
+          }
+        ]
+      },
+      {
+        "id": "slo-compliance",
+        "title": "🎯 SLO Compliance",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(postboxen_recap_duration_bucket[5m]))",
+            "legendFormat": "Recap p95 (ms)",
+            "unit": "ms"
+          },
+          {
+            "expr": "rate(postboxen_join_success_total[5m]) / rate(postboxen_join_attempt_total[5m]) * 100",
+            "legendFormat": "Join success rate (%)",
+            "unit": "percent"
+          },
+          {
+            "expr": "rate(postboxen_decision_coverage_total[1h])",
+            "legendFormat": "Decision coverage (%)",
+            "unit": "percent"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 90000,
+            "color": "green"
+          },
+          {
+            "value": 99,
+            "color": "green"
+          },
+          {
+            "value": 100,
+            "color": "green"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": []
+  }
+}
