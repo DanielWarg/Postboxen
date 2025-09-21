@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Select,
   SelectTrigger,
@@ -55,6 +56,8 @@ import { MonitoringDashboard } from "./components/monitoring-dashboard";
 import { SlashCommandsCard } from "./components/slash-commands-card";
 import { MagicInviteCard } from "./components/magic-invite-card";
 import { ConsentCard } from "./components/consent-card";
+import { CommandPalette } from "./components/command-palette";
+import { useDashboardSettings } from "@/hooks/use-dashboard-settings";
 
 // ------------------------------------------------------------
 // Minimal, lugn dashboard i ljust tema med "Spotlight"-ytor.
@@ -63,11 +66,23 @@ import { ConsentCard } from "./components/consent-card";
 // ------------------------------------------------------------
 
 export default function Dashboard() {
-  const [spotlight, setSpotlight] = useState<SpotlightKey>("meetings");
-  const [meetingId, setMeetingId] = useState<string>("Q3-Strategy-001");
-  const [compact, setCompact] = useState<boolean>(true);
+  const { settings, isLoaded, updateSpotlight, updateCompact } = useDashboardSettings()
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [meetingId, setMeetingId] = useState<string>("Q3-Strategy-001")
 
-  const current = useMemo(() => SPOTLIGHTS[spotlight], [spotlight]);
+  // Use persisted settings or defaults
+  const spotlight = isLoaded ? settings.spotlight : "meetings"
+  const compact = isLoaded ? settings.compact : true
+
+  const current = useMemo(() => SPOTLIGHTS[spotlight as SpotlightKey], [spotlight])
+
+  const handleSpotlightChange = (newSpotlight: SpotlightKey) => {
+    updateSpotlight(newSpotlight)
+  }
+
+  const handleCompactChange = (newCompact: boolean) => {
+    updateCompact(newCompact)
+  }
 
   // --- Dev smoke tests (körs i dev) ---
   useEffect(() => {
@@ -85,6 +100,17 @@ export default function Dashboard() {
   const Comp = current?.Component ?? (() => (
     <div className="text-sm text-red-600">Saknar komponent för denna spotlight.</div>
   ));
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Laddar dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -105,7 +131,16 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto">
-              <SpotlightSelect value={spotlight} onChange={setSpotlight} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCommandPaletteOpen(true)}
+                className="text-xs"
+              >
+                <Terminal className="h-3 w-3 mr-1" />
+                ⌘K
+              </Button>
+              <SpotlightSelect value={spotlight as SpotlightKey} onChange={handleSpotlightChange} />
               <MeetingSelect value={meetingId} onChange={setMeetingId} />
             </div>
           </CardContent>
@@ -655,8 +690,15 @@ function QuickActions() {
           <Row icon={BellDot} title="2 åtgärder nudgade" meta="för 1 h sedan" />
         </CardContent>
       </Card>
-    </div>
-  );
+
+    {/* Command Palette */}
+    <CommandPalette 
+      open={commandPaletteOpen}
+      onOpenChange={setCommandPaletteOpen}
+      onSelectSpotlight={handleSpotlightChange}
+      currentSpotlight={spotlight}
+    />
+  </main>
 }
 
 // -------------------- Simple config validator ("test cases") ----------------------
