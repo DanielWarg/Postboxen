@@ -1,0 +1,190 @@
+groups:
+  - name: postboxen-production
+    rules:
+      # Application Health Alerts
+      - alert: PostboxenDown
+        expr: up{job="postboxen-prod"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postboxen
+        annotations:
+          summary: "Postboxen application is down"
+          description: "Postboxen application has been down for more than 1 minute."
+
+      - alert: PostboxenHighErrorRate
+        expr: rate(http_requests_total{job="postboxen-prod",status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: postboxen
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second for more than 2 minutes."
+
+      - alert: PostboxenHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="postboxen-prod"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: postboxen
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for more than 5 minutes."
+
+      # Database Alerts
+      - alert: DatabaseConnectionHigh
+        expr: postboxen_db_connections_active{job="postboxen-prod"} > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connection count"
+          description: "Database has {{ $value }} active connections."
+
+      - alert: DatabaseConnectionCritical
+        expr: postboxen_db_connections_active{job="postboxen-prod"} > 95
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Critical database connection count"
+          description: "Database has {{ $value }} active connections."
+
+      # Redis Alerts
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes{job="postboxen-prod"} / redis_memory_max_bytes{job="postboxen-prod"} > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+
+      - alert: RedisMemoryCritical
+        expr: redis_memory_used_bytes{job="postboxen-prod"} / redis_memory_max_bytes{job="postboxen-prod"} > 0.95
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Critical Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+
+      # Queue Alerts
+      - alert: QueueBacklogHigh
+        expr: postboxen_queue_jobs_total{job="postboxen-prod",status="waiting"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+        annotations:
+          summary: "High queue backlog"
+          description: "Queue has {{ $value }} waiting jobs."
+
+      - alert: QueueFailedJobsHigh
+        expr: postboxen_queue_jobs_total{job="postboxen-prod",status="failed"} > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: queue
+        annotations:
+          summary: "High number of failed jobs"
+          description: "Queue has {{ $value }} failed jobs."
+
+      - alert: DeadLetterQueueJobs
+        expr: postboxen_queue_jobs_total{job="postboxen-prod",queue="dead-letter"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: queue
+        annotations:
+          summary: "Jobs in dead letter queue"
+          description: "Dead letter queue has {{ $value }} jobs."
+
+      # Agent Performance Alerts
+      - alert: AgentProcessingSlow
+        expr: rate(postboxen_agent_meetings_total{job="postboxen-prod"}[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: agent
+        annotations:
+          summary: "Agent processing rate is low"
+          description: "Agent is processing {{ $value }} meetings per second."
+
+      - alert: AgentDecisionRateLow
+        expr: rate(postboxen_agent_decisions_total{job="postboxen-prod"}[5m]) < 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: agent
+        annotations:
+          summary: "Agent decision rate is low"
+          description: "Agent is making {{ $value }} decisions per second."
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="postboxen-prod"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}."
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="postboxen-prod"} / (1024*1024*1024) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}GB."
+
+      # Security Alerts
+      - alert: HighRateLimitHits
+        expr: rate(postboxen_rate_limit_hits_total{job="postboxen-prod"}[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High rate limit hits"
+          description: "Rate limit is being hit {{ $value }} times per second."
+
+      - alert: AuthenticationFailures
+        expr: rate(postboxen_auth_failures_total{job="postboxen-prod"}[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures at {{ $value }} per second."
+
+      # Business Logic Alerts
+      - alert: NoMeetingsProcessed
+        expr: increase(postboxen_agent_meetings_total{job="postboxen-prod"}[1h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "No meetings processed in the last hour"
+          description: "Agent has not processed any meetings in the last hour."
+
+      - alert: NoDecisionsMade
+        expr: increase(postboxen_agent_decisions_total{job="postboxen-prod"}[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "No decisions made in the last 2 hours"
+          description: "Agent has not made any decisions in the last 2 hours."

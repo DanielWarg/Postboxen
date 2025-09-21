@@ -50,6 +50,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { MonitoringDashboard } from "./components/monitoring-dashboard";
 
 // ------------------------------------------------------------
 // Minimal, lugn dashboard i ljust tema med "Spotlight"-ytor.
@@ -168,7 +169,8 @@ type SpotlightKey =
   | "briefs"
   | "regwatch"
   | "compliance"
-  | "observability";
+  | "observability"
+  | "monitoring";
 
 interface SpotlightDef {
   key: SpotlightKey;
@@ -244,12 +246,21 @@ const SPOTLIGHTS: Record<SpotlightKey, SpotlightDef> = {
     help: "Här ser du teknisk hälsa och kostnad. Bra för drift och optimering – men snyggt nedtonat för att inte störa.",
     Component: ObservabilityPanel,
   },
+  monitoring: {
+    key: "monitoring",
+    title: "Monitoring",
+    badge: "system & prestanda",
+    icon: Gauge,
+    description: "Real-time system metrics, health monitoring och prestanda.",
+    help: "Övervaka systemhälsa, resursanvändning, köer och affärsmetrics i realtid.",
+    Component: MonitoringPanel,
+  },
 };
 
 function SpotlightSelect({ value, onChange }: { value: SpotlightKey; onChange: (k: SpotlightKey) => void }) {
   return (
     <Tabs value={value} onValueChange={(v) => onChange(v as SpotlightKey)} className="w-full md:w-auto">
-      <TabsList className="grid grid-cols-3 md:grid-cols-7 w-full">
+      <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
         {Object.values(SPOTLIGHTS).map((s) => (
           <TabsTrigger key={s.key} value={s.key} className="text-xs md:text-sm">
             {s.title}
@@ -474,6 +485,14 @@ function ObservabilityPanel({ meetingId, compact }: { meetingId: string; compact
           <div>Missade joins: 0 (7 dagar)</div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function MonitoringPanel({ meetingId, compact }: { meetingId: string; compact: boolean }) {
+  return (
+    <div className="space-y-4">
+      <MonitoringDashboard />
     </div>
   );
 }

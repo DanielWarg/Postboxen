@@ -1,0 +1,194 @@
+# Grafana Dashboard Configuration for Postboxen Production
+
+# Dashboard JSON configuration
+{
+  "dashboard": {
+    "id": null,
+    "title": "Postboxen Production Monitoring",
+    "tags": ["postboxen", "production", "agents"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Application Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"postboxen-prod\"}",
+            "legendFormat": "Application Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"postboxen-prod\"}[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"postboxen-prod\"}[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"postboxen-prod\"}[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"postboxen-prod\",status=~\"5..\"}[5m])",
+            "legendFormat": "5xx Errors"
+          },
+          {
+            "expr": "rate(http_requests_total{job=\"postboxen-prod\",status=~\"4..\"}[5m])",
+            "legendFormat": "4xx Errors"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Queue Statistics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "postboxen_queue_jobs_total{job=\"postboxen-prod\"}",
+            "legendFormat": "{{queue}} - {{status}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Jobs",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "postboxen_db_connections_active{job=\"postboxen-prod\"}",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "postboxen_db_connections_idle{job=\"postboxen-prod\"}",
+            "legendFormat": "Idle Connections"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Connections",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 7,
+        "title": "Redis Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes{job=\"postboxen-prod\"}",
+            "legendFormat": "Used Memory"
+          },
+          {
+            "expr": "redis_memory_max_bytes{job=\"postboxen-prod\"}",
+            "legendFormat": "Max Memory"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Bytes",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "Agent Activity",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "postboxen_agent_meetings_total{job=\"postboxen-prod\"}",
+            "legendFormat": "Meetings Processed"
+          },
+          {
+            "expr": "postboxen_agent_decisions_total{job=\"postboxen-prod\"}",
+            "legendFormat": "Decisions Made"
+          },
+          {
+            "expr": "postboxen_agent_actions_total{job=\"postboxen-prod\"}",
+            "legendFormat": "Actions Created"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32}
+      }
+    ]
+  }
+}

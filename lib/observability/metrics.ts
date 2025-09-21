@@ -111,60 +111,77 @@ export const metrics = new MetricsCollector()
 // Predefined metrics for the agent platform
 export const agentMetrics = {
   // Meeting metrics
-  meetingsTotal: () => metrics.incrementCounter('meetings_total'),
-  meetingsActive: (count: number) => metrics.setGauge('meetings_active', count),
-  meetingDuration: (duration: number) => metrics.observeHistogram('meeting_duration_seconds', duration),
+  meetingsTotal: () => metrics.incrementCounter('postboxen_agent_meetings_total'),
+  meetingsActive: (count: number) => metrics.setGauge('postboxen_meetings_active', count),
+  meetingDuration: (duration: number) => metrics.observeHistogram('postboxen_meeting_duration_seconds', duration),
   
   // Decision metrics
-  decisionsTotal: () => metrics.incrementCounter('decisions_total'),
-  decisionsPerMeeting: (count: number) => metrics.observeHistogram('decisions_per_meeting', count),
+  decisionsTotal: () => metrics.incrementCounter('postboxen_agent_decisions_total'),
+  decisionsPerMeeting: (count: number) => metrics.observeHistogram('postboxen_decisions_per_meeting', count),
   
   // Action metrics
-  actionsTotal: () => metrics.incrementCounter('actions_total'),
-  actionsCompleted: () => metrics.incrementCounter('actions_completed_total'),
-  actionsOverdue: () => metrics.incrementCounter('actions_overdue_total'),
+  actionsTotal: () => metrics.incrementCounter('postboxen_agent_actions_total'),
+  actionsCompleted: () => metrics.incrementCounter('postboxen_actions_completed_total'),
+  actionsOverdue: () => metrics.incrementCounter('postboxen_actions_overdue_total'),
   
   // API metrics
   apiRequestsTotal: (method: string, endpoint: string, statusCode: number) => 
-    metrics.incrementCounter('api_requests_total', 1, { method, endpoint, status: statusCode.toString() }),
+    metrics.incrementCounter('http_requests_total', 1, { method, endpoint, status: statusCode.toString() }),
   apiRequestDuration: (method: string, endpoint: string, duration: number) => 
-    metrics.observeHistogram('api_request_duration_seconds', duration, { method, endpoint }),
+    metrics.observeHistogram('http_request_duration_seconds', duration, { method, endpoint }),
   
   // Agent metrics
   agentProcessingTime: (agentType: string, duration: number) => 
-    metrics.observeHistogram('agent_processing_duration_seconds', duration, { agent_type: agentType }),
+    metrics.observeHistogram('postboxen_agent_processing_duration_seconds', duration, { agent_type: agentType }),
   agentErrors: (agentType: string) => 
-    metrics.incrementCounter('agent_errors_total', 1, { agent_type: agentType }),
+    metrics.incrementCounter('postboxen_agent_errors_total', 1, { agent_type: agentType }),
   
   // Retention metrics
-  retentionJobsScheduled: () => metrics.incrementCounter('retention_jobs_scheduled_total'),
-  retentionJobsExecuted: () => metrics.incrementCounter('retention_jobs_executed_total'),
-  retentionRecordsDeleted: (count: number) => metrics.incrementCounter('retention_records_deleted_total', count),
+  retentionJobsScheduled: () => metrics.incrementCounter('postboxen_retention_jobs_scheduled_total'),
+  retentionJobsExecuted: () => metrics.incrementCounter('postboxen_retention_jobs_executed_total'),
+  retentionRecordsDeleted: (count: number) => metrics.incrementCounter('postboxen_retention_records_deleted_total', count),
   
   // Regwatch metrics
-  regwatchChecksTotal: () => metrics.incrementCounter('regwatch_checks_total'),
+  regwatchChecksTotal: () => metrics.incrementCounter('postboxen_regwatch_checks_total'),
   regwatchChangesDetected: (source: string) => 
-    metrics.incrementCounter('regwatch_changes_detected_total', 1, { source }),
+    metrics.incrementCounter('postboxen_regwatch_changes_detected_total', 1, { source }),
   regwatchErrors: (source: string) => 
-    metrics.incrementCounter('regwatch_errors_total', 1, { source }),
+    metrics.incrementCounter('postboxen_regwatch_errors_total', 1, { source }),
   
   // Database metrics
-  dbConnectionsActive: (count: number) => metrics.setGauge('db_connections_active', count),
+  dbConnectionsActive: (count: number) => metrics.setGauge('postboxen_db_connections_active', count),
+  dbConnectionsIdle: (count: number) => metrics.setGauge('postboxen_db_connections_idle', count),
   dbQueryDuration: (query: string, duration: number) => 
-    metrics.observeHistogram('db_query_duration_seconds', duration, { query }),
+    metrics.observeHistogram('postboxen_db_query_duration_seconds', duration, { query }),
   
   // Redis metrics
   redisConnectionsActive: (count: number) => metrics.setGauge('redis_connections_active', count),
+  redisMemoryUsed: (bytes: number) => metrics.setGauge('redis_memory_used_bytes', bytes),
+  redisMemoryMax: (bytes: number) => metrics.setGauge('redis_memory_max_bytes', bytes),
   redisOperationsTotal: (operation: string) => 
     metrics.incrementCounter('redis_operations_total', 1, { operation }),
   
   // Job queue metrics
-  jobQueueSize: (queue: string, size: number) => 
-    metrics.setGauge('job_queue_size', size, { queue }),
+  jobQueueSize: (queue: string, status: string, size: number) => 
+    metrics.setGauge('postboxen_queue_jobs_total', size, { queue, status }),
   jobProcessingDuration: (queue: string, duration: number) => 
-    metrics.observeHistogram('job_processing_duration_seconds', duration, { queue }),
+    metrics.observeHistogram('postboxen_job_processing_duration_seconds', duration, { queue }),
   jobFailures: (queue: string) => 
-    metrics.incrementCounter('job_failures_total', 1, { queue }),
+    metrics.incrementCounter('postboxen_job_failures_total', 1, { queue }),
+  
+  // Security metrics
+  rateLimitHits: () => metrics.incrementCounter('postboxen_rate_limit_hits_total'),
+  authFailures: () => metrics.incrementCounter('postboxen_auth_failures_total'),
+  authSuccesses: () => metrics.incrementCounter('postboxen_auth_successes_total'),
+  
+  // System metrics
+  cpuUsage: (usage: number) => metrics.setGauge('process_cpu_seconds_total', usage),
+  memoryUsage: (bytes: number) => metrics.setGauge('process_resident_memory_bytes', bytes),
+  
+  // Business metrics
+  userSessions: (count: number) => metrics.setGauge('postboxen_user_sessions_active', count),
+  consentGiven: (level: string) => metrics.incrementCounter('postboxen_consent_given_total', 1, { level }),
+  consentRevoked: (level: string) => metrics.incrementCounter('postboxen_consent_revoked_total', 1, { level }),
 }
 
 // Middleware for automatic API metrics
